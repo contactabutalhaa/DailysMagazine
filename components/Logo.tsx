@@ -141,7 +141,7 @@ export default function Logo({
 
   if (href) {
     return (
-      <Link href={href} className="inline-block focus:outline-hidden">
+      <Link href={href} className="inline-block focus:outline-none">
         {content}
       </Link>
     );

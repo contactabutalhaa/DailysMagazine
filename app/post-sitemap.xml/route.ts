@@ -8,7 +8,13 @@ export async function GET() {
     .map((p) => {
       const categorySlug = p.category ? p.category.toLowerCase() : 'culture';
       const loc = `https://dailysmagazine.com/${categorySlug}/${p.slug}`;
-      const lastmod = new Date(p.updatedAt || p.createdAt || Date.now()).toISOString();
+      let lastmod = new Date().toISOString();
+      try {
+        const parsed = new Date(p.updatedAt || p.createdAt || Date.now());
+        if (!isNaN(parsed.getTime())) {
+          lastmod = parsed.toISOString();
+        }
+      } catch (e) {}
       const changefreq = settings.postsChangefreq || 'daily';
       const priority = settings.postsPriority || '0.8';
 

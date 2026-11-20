@@ -7,7 +7,13 @@ export async function GET() {
     .map((p) => {
       const categorySlug = p.category ? p.category.toLowerCase() : 'culture';
       const loc = `https://dailysmagazine.com/${categorySlug}/${p.slug}`;
-      const pubDate = new Date(p.publishedAt || p.createdAt || Date.now()).toISOString();
+      let pubDate = new Date().toISOString();
+      try {
+        const parsed = new Date(p.publishedAt || p.createdAt || Date.now());
+        if (!isNaN(parsed.getTime())) {
+          pubDate = parsed.toISOString();
+        }
+      } catch (e) {}
       const cleanTitle = (p.title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
       return `  <url>

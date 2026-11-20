@@ -22,12 +22,13 @@ function ensureStorageFile(): void {
 
 export function getCustomPosts(): CmsPost[] {
   try {
-    ensureStorageFile();
-    const raw = fs.readFileSync(STORAGE_FILE, 'utf8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (fs.existsSync(STORAGE_FILE)) {
+      const raw = fs.readFileSync(STORAGE_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+    return [];
   } catch (err) {
-    console.error('Failed to read custom posts from disk:', err);
     return [];
   }
 }
