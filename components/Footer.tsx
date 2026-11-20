@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { ArrowUp, Mail, Check, Twitter, Linkedin, Instagram, Rss } from 'lucide-react';
 import { CATEGORIES } from '@/data/categories';
+import Logo from './Logo';
 
 export default function Footer() {
   const [email, setEmail] = useState('');
@@ -28,15 +29,7 @@ export default function Footer() {
         {/* Top Section: Brand Info + Quick Subscribe Bar */}
         <div className="pb-12 border-b border-slate-800 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-5 space-y-3">
-            <Link href="/" className="inline-flex items-center gap-1 group">
-              <span className="font-extrabold text-2xl tracking-tight text-orange-500">
-                Dailys
-              </span>
-              <span className="font-extrabold text-2xl tracking-tight text-white group-hover:text-slate-200 transition-colors">
-                Magazine
-              </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mb-2 ml-0.5" />
-            </Link>
+            <Logo variant="dark" size="md" href="/" />
             <p className="text-slate-400 text-sm max-w-md leading-relaxed">
               Fresh perspectives on culture, technology, modern living, and bold ideas—curated daily for the modern intellectual and conscious operator.
             </p>

@@ -17,6 +17,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useAdmin } from './AdminContext';
+import Logo from '@/components/Logo';
 
 interface AdminTopBarProps {
   onLogout?: () => void;
@@ -59,21 +60,12 @@ export default function AdminTopBar({ onLogout }: AdminTopBarProps) {
       {/* Left: Brand + Quick Actions */}
       <div className="flex items-center space-x-2 sm:space-x-3">
         {/* Brand mark */}
-        <Link
-          href="/admin"
-          className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
-          title="DailysMagazine Admin Dashboard"
-        >
-          <span className="w-5 h-5 rounded-md bg-orange-500 text-white flex items-center justify-center font-extrabold text-xs shadow-xs">
-            D
+        <div className="flex items-center gap-2">
+          <Logo size="sm" showTagline={false} href="/admin" />
+          <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold rounded bg-orange-100 text-orange-700 uppercase tracking-wider">
+            CMS
           </span>
-          <span className="font-heading font-extrabold tracking-tight text-sm text-slate-900">
-            Dailys<span className="text-orange-500 font-extrabold">Magazine</span>
-            <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-600 uppercase tracking-wide">
-              CMS
-            </span>
-          </span>
-        </Link>
+        </div>
 
         <span className="h-4 w-px bg-slate-200" />
 

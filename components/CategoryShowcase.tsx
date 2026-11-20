@@ -1,33 +1,75 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Clock, Cpu, Palette, Briefcase, Leaf, Heart } from 'lucide-react';
-import { getArticlesByCategory } from '@/data/articles';
+import { getArticlesByCategory, ARTICLES } from '@/data/articles';
 import { CATEGORIES } from '@/data/categories';
+import { Article } from '@/types';
+import { convertCmsPostToArticle } from '@/lib/article-converter';
+import { CmsPost } from '@/types/admin';
 
-export default function CategoryShowcase() {
+interface CategoryShowcaseProps {
+  initialArticles?: Article[];
+}
+
+export default function CategoryShowcase({ initialArticles }: CategoryShowcaseProps) {
+  const [articles, setArticles] = useState<Article[]>(initialArticles || ARTICLES);
+
+  useEffect(() => {
+    if (initialArticles && initialArticles.length > 0) {
+      setArticles(initialArticles);
+    }
+  }, [initialArticles]);
+
+  useEffect(() => {
+    fetch('/api/posts')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((customPosts: CmsPost[]) => {
+        if (Array.isArray(customPosts) && customPosts.length > 0) {
+          const published = customPosts
+            .filter((p) => p.status === 'published')
+            .map(convertCmsPostToArticle);
+          setArticles([...published, ...ARTICLES]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const getByCat = (cat: string) => {
+    const list = articles.filter((a) => a.category === cat);
+    return list.length > 0 ? list : getArticlesByCategory(cat);
+  };
+
   // Grab articles per category
-  const techArticles = getArticlesByCategory('tech');
-  const ideasArticles = getArticlesByCategory('ideas');
-  const cultureArticles = getArticlesByCategory('culture');
-  const designArticles = getArticlesByCategory('design');
-  const businessArticles = getArticlesByCategory('business');
-  const climateArticles = getArticlesByCategory('climate');
-  const wellnessArticles = getArticlesByCategory('wellness');
+  const techArticles = getByCat('tech');
+  const ideasArticles = getByCat('ideas');
+  const cultureArticles = getByCat('culture');
+  const designArticles = getByCat('design');
+  const businessArticles = getByCat('business');
+  const climateArticles = getByCat('climate');
+  const wellnessArticles = getByCat('wellness');
 
   // Combine Tech & Ideas (4 items)
   const techIdeasSpotlight = [...techArticles.slice(0, 2), ...ideasArticles.slice(0, 2)];
 
   // Culture & Design (3 wide items)
-  const cultureDesignStrip = [cultureArticles[0], designArticles[0], cultureArticles[1]];
+  const cultureDesignStrip = [
+    cultureArticles[0] || ARTICLES[0],
+    designArticles[0] || ARTICLES[1],
+    cultureArticles[1] || cultureArticles[0] || ARTICLES[2],
+  ];
 
   // Business (3 items)
   const businessList = businessArticles.slice(0, 3);
 
   // Climate & Wellness (3 curated items)
-  const climateWellnessItems = [climateArticles[0], wellnessArticles[0], climateArticles[1]];
+  const climateWellnessItems = [
+    climateArticles[0] || ARTICLES[3],
+    wellnessArticles[0] || ARTICLES[4],
+    climateArticles[1] || climateArticles[0] || ARTICLES[5],
+  ];
 
   return (
     <div className="space-y-16 py-12">

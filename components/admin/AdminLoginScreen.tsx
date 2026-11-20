@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Lock, User, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle, KeyRound } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 interface AdminLoginScreenProps {
   onLoginSuccess: () => void;
@@ -58,14 +59,12 @@ export default function AdminLoginScreen({ onLoginSuccess }: AdminLoginScreenPro
 
       <div className="relative w-full max-w-md">
         {/* Brand Header */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-block group mb-3">
-            <span className="font-heading font-extrabold text-3xl tracking-tight text-slate-900">
-              <span className="text-orange-600">Dailys</span>Magazine
-            </span>
-          </Link>
-          <div className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-            <ShieldCheck className="w-4 h-4 text-orange-600" />
+        <div className="text-center mb-8 flex flex-col items-center">
+          <div className="mb-4">
+            <Logo size="lg" href="/" />
+          </div>
+          <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-600">
+            <ShieldCheck className="w-3.5 h-3.5 text-orange-600" />
             <span>Editorial CMS & SEO Suite</span>
           </div>
         </div>

@@ -1,18 +1,47 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Clock, Sparkles } from 'lucide-react';
 import { getFeaturedArticle, ARTICLES } from '@/data/articles';
 import { CATEGORIES } from '@/data/categories';
+import { Article } from '@/types';
+import { convertCmsPostToArticle } from '@/lib/article-converter';
+import { CmsPost } from '@/types/admin';
 
-export default function HeroSection() {
-  const featured = getFeaturedArticle();
-  const cat = CATEGORIES[featured.category];
+interface HeroSectionProps {
+  initialArticles?: Article[];
+}
+
+export default function HeroSection({ initialArticles }: HeroSectionProps) {
+  const [articles, setArticles] = useState<Article[]>(initialArticles || ARTICLES);
+
+  useEffect(() => {
+    if (initialArticles && initialArticles.length > 0) {
+      setArticles(initialArticles);
+    }
+  }, [initialArticles]);
+
+  useEffect(() => {
+    fetch('/api/posts')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((customPosts: CmsPost[]) => {
+        if (Array.isArray(customPosts) && customPosts.length > 0) {
+          const published = customPosts
+            .filter((p) => p.status === 'published')
+            .map(convertCmsPostToArticle);
+          setArticles([...published, ...ARTICLES]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const featured = articles.find((a) => a.featured) || articles[0];
+  const cat = CATEGORIES[featured.category] || { accentHex: '#F97316', name: featured.categoryName };
 
   // Pick 3 latest stories for the right-hand column (excluding the featured one)
-  const latestStories = ARTICLES.filter((a) => a.id !== featured.id).slice(0, 3);
+  const latestStories = articles.filter((a) => a.id !== featured.id).slice(0, 3);
 
   return (
     <section className="pt-6 pb-12 bg-white border-b border-slate-200/80">

@@ -8,16 +8,32 @@ import { Search, X, Tag, ArrowRight, BookOpen } from 'lucide-react';
 import { useModals } from './ModalContext';
 import { ARTICLES } from '@/data/articles';
 import { CATEGORIES } from '@/data/categories';
+import { Article } from '@/types';
+import { convertCmsPostToArticle } from '@/lib/article-converter';
+import { CmsPost } from '@/types/admin';
 
 export default function SearchModal() {
   const { isSearchOpen, closeSearch } = useModals();
   const [query, setQuery] = useState('');
+  const [articles, setArticles] = useState<Article[]>(ARTICLES);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isSearchOpen) {
       setTimeout(() => inputRef.current?.focus(), 50);
       document.body.style.overflow = 'hidden';
+
+      fetch('/api/posts')
+        .then((res) => (res.ok ? res.json() : []))
+        .then((customPosts: CmsPost[]) => {
+          if (Array.isArray(customPosts) && customPosts.length > 0) {
+            const published = customPosts
+              .filter((p) => p.status === 'published')
+              .map(convertCmsPostToArticle);
+            setArticles([...published, ...ARTICLES]);
+          }
+        })
+        .catch(() => {});
     } else {
       document.body.style.overflow = '';
       setQuery('');
@@ -39,7 +55,7 @@ export default function SearchModal() {
 
   const cleanQuery = query.trim().toLowerCase();
   const filteredArticles = cleanQuery
-    ? ARTICLES.filter((article) => {
+    ? articles.filter((article) => {
         const matchTitle = article.title.toLowerCase().includes(cleanQuery);
         const matchSubtitle = article.subtitle.toLowerCase().includes(cleanQuery);
         const matchCategory = article.categoryName.toLowerCase().includes(cleanQuery);

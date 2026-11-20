@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,8 +8,10 @@ import { Sparkles, Mail, Flame, CheckCircle, ArrowRight } from 'lucide-react';
 import ArticleCard from './ArticleCard';
 import { ARTICLES, getMustReadArticles } from '@/data/articles';
 import { CATEGORIES } from '@/data/categories';
-import { CategorySlug } from '@/types';
+import { CategorySlug, Article } from '@/types';
 import { useModals } from './ModalContext';
+import { convertCmsPostToArticle } from '@/lib/article-converter';
+import { CmsPost } from '@/types/admin';
 
 const FILTER_TABS: { label: string; slug: CategorySlug | 'all' }[] = [
   { label: 'All Stories', slug: 'all' },
@@ -23,18 +25,43 @@ const FILTER_TABS: { label: string; slug: CategorySlug | 'all' }[] = [
   { label: 'Wellness', slug: 'wellness' },
 ];
 
-export default function FilterableFeed() {
+interface FilterableFeedProps {
+  initialArticles?: Article[];
+}
+
+export default function FilterableFeed({ initialArticles }: FilterableFeedProps) {
+  const [articles, setArticles] = useState<Article[]>(initialArticles || ARTICLES);
   const [activeFilter, setActiveFilter] = useState<CategorySlug | 'all'>('all');
   const [sidebarEmail, setSidebarEmail] = useState('');
   const [sidebarSuccess, setSidebarSuccess] = useState(false);
   const { openNewsletter } = useModals();
 
-  const mustReadArticles = getMustReadArticles().slice(0, 4);
+  useEffect(() => {
+    if (initialArticles && initialArticles.length > 0) {
+      setArticles(initialArticles);
+    }
+  }, [initialArticles]);
+
+  useEffect(() => {
+    fetch('/api/posts')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((customPosts: CmsPost[]) => {
+        if (Array.isArray(customPosts) && customPosts.length > 0) {
+          const published = customPosts
+            .filter((p) => p.status === 'published')
+            .map(convertCmsPostToArticle);
+          setArticles([...published, ...ARTICLES]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const mustReadArticles = articles.filter((a) => a.mustRead).slice(0, 4);
 
   const filteredArticles =
     activeFilter === 'all'
-      ? ARTICLES
-      : ARTICLES.filter((article) => article.category === activeFilter);
+      ? articles
+      : articles.filter((article) => article.category === activeFilter);
 
   const handleSidebarSubscribe = (e: React.FormEvent) => {
     e.preventDefault();

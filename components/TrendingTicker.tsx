@@ -1,12 +1,31 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Flame } from 'lucide-react';
-import { getTrendingArticles } from '@/data/articles';
+import { getTrendingArticles, ARTICLES } from '@/data/articles';
+import { Article } from '@/types';
+import { convertCmsPostToArticle } from '@/lib/article-converter';
+import { CmsPost } from '@/types/admin';
 
 export default function TrendingTicker() {
-  const trendingStories = getTrendingArticles();
+  const [trendingStories, setTrendingStories] = useState<Article[]>(getTrendingArticles());
+
+  useEffect(() => {
+    fetch('/api/posts')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((customPosts: CmsPost[]) => {
+        if (Array.isArray(customPosts) && customPosts.length > 0) {
+          const published = customPosts
+            .filter((p) => p.status === 'published')
+            .map(convertCmsPostToArticle);
+          const all = [...published, ...ARTICLES];
+          const trending = all.filter((a) => a.trending);
+          setTrendingStories(trending.length > 0 ? trending : all.slice(0, 5));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="bg-white border-b border-slate-200/90 text-xs py-2.5 px-4 sm:px-6 lg:px-8">

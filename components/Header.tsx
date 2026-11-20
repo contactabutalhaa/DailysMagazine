@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Menu, X, ChevronDown, Mail, ArrowUpRight, Sparkles, LayoutDashboard } from 'lucide-react';
 import { useModals } from './ModalContext';
 import { CATEGORIES } from '@/data/categories';
+import Logo from './Logo';
 
 const PRIMARY_NAV = [
   { name: 'Culture', href: '/category/culture' },
@@ -51,15 +52,7 @@ export default function Header() {
       >
         <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Left: Brand Wordmark Logo */}
-          <Link href="/" className="flex items-center gap-1 group">
-            <span className="font-extrabold text-2xl tracking-tight text-orange-600 transition-colors">
-              Dailys
-            </span>
-            <span className="font-extrabold text-2xl tracking-tight text-slate-900 group-hover:text-slate-800 transition-colors">
-              Magazine
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-600 mb-2 ml-0.5" />
-          </Link>
+          <Logo size="md" href="/" />
 
           {/* Center: Desktop Navigation Bar */}
           <nav className="hidden lg:flex items-center space-x-1 xl:space-x-2">
@@ -215,11 +208,9 @@ export default function Header() {
             >
               {/* Drawer Top */}
               <div className="h-[72px] px-6 border-b border-slate-100 flex items-center justify-between">
-                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-1">
-                  <span className="font-extrabold text-xl text-orange-600">Dailys</span>
-                  <span className="font-extrabold text-xl text-slate-900">Magazine</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-600 mb-2 ml-0.5" />
-                </Link>
+                <div onClick={() => setMobileMenuOpen(false)}>
+                  <Logo size="sm" href="/" />
+                </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100"
