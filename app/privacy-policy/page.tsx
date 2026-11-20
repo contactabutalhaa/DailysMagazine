@@ -116,7 +116,7 @@ export default function PrivacyPolicyPage() {
               If you have inquiries, audit requests, or wish to exercise your statutory privacy rights, contact our Data Governance Officer at:
             </p>
             <div className="p-4 bg-slate-100 rounded-2xl text-sm font-semibold text-slate-800">
-              Email: <a href="mailto:privacy@dailysmagazine.com" className="text-orange-600 underline">privacy@dailysmagazine.com</a>
+              Email: <a href="mailto:lucamarvass@gmail.com" className="text-orange-600 underline">lucamarvass@gmail.com</a>
               <br />
               Subject: Privacy Inquiries & Reader Data Request
             </div>

@@ -6,15 +6,15 @@ import { Mail, MessageSquare, HelpCircle, ChevronDown, CheckCircle2, Send, MapPi
 const FAQS = [
   {
     q: 'How do I pitch a story to DailysMagazine?',
-    a: 'Please visit our dedicated Write For Us page and submit your pitch via our interactive form. Our commissioning editors review incoming pitches twice weekly.',
+    a: 'Please visit our dedicated Write For Us page and submit your pitch via our interactive form, or email your pitch directly to lucamarvass@gmail.com. Our commissioning editors review incoming pitches twice weekly.',
   },
   {
     q: 'Can I syndicate or republish DailysMagazine content?',
-    a: 'We grant republication licenses to accredited non-profit journals, universities, and partner publications with proper canonical attribution. Contact editorial@dailysmagazine.com for syndication rights.',
+    a: 'We grant republication licenses to accredited non-profit journals, universities, and partner publications with proper canonical attribution. Contact lucamarvass@gmail.com for syndication rights.',
   },
   {
     q: 'How do I submit an editorial correction?',
-    a: 'Editorial accuracy is paramount. If you spot a factual error in any published dispatch, email corrections@dailysmagazine.com with the article link and verified supporting sources.',
+    a: 'Editorial accuracy is paramount. If you spot a factual error in any published dispatch, email lucamarvass@gmail.com with the article link and verified supporting sources.',
   },
   {
     q: 'How do I manage or cancel my newsletter subscription?',
@@ -74,16 +74,17 @@ export default function ContactPage() {
               <div className="space-y-4 text-sm">
                 <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-subtle">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-orange-600 block mb-1">
-                    Editorial Board & Letters
+                    Primary Editorial & Story Tips
                   </span>
                   <a
-                    href="mailto:editorial@dailysmagazine.com"
-                    className="font-bold text-slate-900 hover:text-orange-600 transition-colors"
+                    href="mailto:lucamarvass@gmail.com"
+                    className="font-bold text-slate-900 hover:text-orange-600 transition-colors flex items-center gap-1.5"
                   >
-                    editorial@dailysmagazine.com
+                    <Mail className="w-4 h-4 text-orange-500" />
+                    lucamarvass@gmail.com
                   </a>
                   <p className="text-xs text-slate-500 mt-1">
-                    For story tips, letters to the editor, and pitch inquiries.
+                    For story tips, letters to the editor, pitch inquiries, and corrections.
                   </p>
                 </div>
 
@@ -92,10 +93,11 @@ export default function ContactPage() {
                     Brand Partnerships & Media Kit
                   </span>
                   <a
-                    href="mailto:partners@dailysmagazine.com"
-                    className="font-bold text-slate-900 hover:text-blue-600 transition-colors"
+                    href="mailto:lucamarvass@gmail.com?subject=Brand%20Partnership%20Inquiry"
+                    className="font-bold text-slate-900 hover:text-blue-600 transition-colors flex items-center gap-1.5"
                   >
-                    partners@dailysmagazine.com
+                    <Mail className="w-4 h-4 text-blue-500" />
+                    lucamarvass@gmail.com
                   </a>
                   <p className="text-xs text-slate-500 mt-1">
                     For advertising proposals, sponsorships, and newsletter takeovers.
@@ -107,10 +109,11 @@ export default function ContactPage() {
                     Press & Syndication Rights
                   </span>
                   <a
-                    href="mailto:press@dailysmagazine.com"
-                    className="font-bold text-slate-900 hover:text-emerald-600 transition-colors"
+                    href="mailto:lucamarvass@gmail.com?subject=Press%20Syndication%20Rights"
+                    className="font-bold text-slate-900 hover:text-emerald-600 transition-colors flex items-center gap-1.5"
                   >
-                    press@dailysmagazine.com
+                    <Mail className="w-4 h-4 text-emerald-500" />
+                    lucamarvass@gmail.com
                   </a>
                   <p className="text-xs text-slate-500 mt-1">
                     Media inquiries, interview requests, and content licensing.

@@ -314,7 +314,7 @@ export default function AdvertisePage() {
                 </button>
 
                 <p className="text-[11px] text-slate-400 text-center">
-                  Direct email: <a href="mailto:partners@dailysmagazine.com" className="text-orange-600 underline">partners@dailysmagazine.com</a>. We reply within one business day.
+                  Direct email: <a href="mailto:lucamarvass@gmail.com" className="text-orange-600 underline">lucamarvass@gmail.com</a>. We reply within one business day.
                 </p>
               </form>
             </div>

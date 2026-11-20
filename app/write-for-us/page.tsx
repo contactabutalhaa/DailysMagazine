@@ -169,7 +169,10 @@ export default function WriteForUsPage() {
                   Submit Your Article Pitch
                 </h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  Please outline your thesis, target category, and include a link to your previous published work.
+                  Please outline your thesis, target category, and include a link to your previous published work, or email your pitch directly to{' '}
+                  <a href="mailto:lucamarvass@gmail.com" className="text-orange-600 underline font-semibold">
+                    lucamarvass@gmail.com
+                  </a>.
                 </p>
               </div>
 
@@ -273,7 +276,10 @@ export default function WriteForUsPage() {
                 </button>
 
                 <p className="text-[11px] text-slate-400 text-center">
-                  We reply to every serious pitch within 5 business days. We do not accept sponsored content through this form.
+                  We reply to every serious pitch within 5 business days. You can also email your full outline or draft directly to{' '}
+                  <a href="mailto:lucamarvass@gmail.com" className="text-orange-600 underline font-semibold">
+                    lucamarvass@gmail.com
+                  </a>. We do not accept sponsored content through this form.
                 </p>
               </form>
             </div>

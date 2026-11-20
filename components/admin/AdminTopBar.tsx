@@ -61,7 +61,7 @@ export default function AdminTopBar({ onLogout }: AdminTopBarProps) {
       <div className="flex items-center space-x-2 sm:space-x-3">
         {/* Brand mark */}
         <div className="flex items-center gap-2">
-          <Logo size="sm" showTagline={false} href="/admin" />
+          <Logo size="sm" href="/admin" />
           <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold rounded bg-orange-100 text-orange-700 uppercase tracking-wider">
             CMS
           </span>

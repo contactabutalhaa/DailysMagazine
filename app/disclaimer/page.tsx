@@ -88,7 +88,7 @@ export default function DisclaimerPage() {
               When a factual error is discovered, DailysMagazine issues a prominent correction note at the top or bottom of the affected article detailing the change and date of amendment. To report potential inaccuracies, contact:
             </p>
             <div className="p-4 bg-slate-100 rounded-2xl text-sm font-semibold text-slate-800">
-              Email: <a href="mailto:corrections@dailysmagazine.com" className="text-orange-600 underline">corrections@dailysmagazine.com</a>
+              Email: <a href="mailto:lucamarvass@gmail.com" className="text-orange-600 underline">lucamarvass@gmail.com</a>
               <br />
               Attn: Standards & Ethics Desk
             </div>

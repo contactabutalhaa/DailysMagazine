@@ -6,7 +6,6 @@ import Link from 'next/link';
 interface LogoProps {
   variant?: 'light' | 'dark';
   size?: 'sm' | 'md' | 'lg';
-  showTagline?: boolean;
   href?: string;
   className?: string;
 }
@@ -14,7 +13,6 @@ interface LogoProps {
 export default function Logo({
   variant = 'light',
   size = 'md',
-  showTagline = true,
   href = '/',
   className = '',
 }: LogoProps) {
@@ -34,12 +32,6 @@ export default function Logo({
     sm: 'text-lg',
     md: 'text-2xl',
     lg: 'text-3xl',
-  }[size];
-
-  const taglineSizes = {
-    sm: 'text-[8px] tracking-[0.2em] -mt-0.5',
-    md: 'text-[9.5px] tracking-[0.22em] -mt-1',
-    lg: 'text-[11px] tracking-[0.25em] -mt-1',
   }[size];
 
   const content = (
@@ -122,40 +114,27 @@ export default function Logo({
       </div>
 
       {/* 2. Typographic Wordmark */}
-      <div className="flex flex-col justify-center">
-        <div className="flex items-baseline">
-          {/* "Dailys" in Vibrant Tangerine Orange */}
-          <span
-            className={`font-heading font-black tracking-tight text-orange-500 transition-colors ${titleSizes}`}
-          >
-            Dailys
-          </span>
+      <div className="flex items-baseline">
+        {/* "Dailys" in Vibrant Tangerine Orange */}
+        <span
+          className={`font-heading font-black tracking-tight text-orange-500 transition-colors ${titleSizes}`}
+        >
+          Dailys
+        </span>
 
-          {/* "Magazine" in Deep Slate Navy (or pure white in dark mode) */}
-          <span
-            className={`font-heading font-black tracking-tight transition-colors ml-0.5 ${
-              isDark
-                ? 'text-white group-hover:text-slate-100'
-                : 'text-slate-900 group-hover:text-slate-800'
-            } ${titleSizes}`}
-          >
-            Magazine
-          </span>
+        {/* "Magazine" in Deep Slate Navy (or pure white in dark mode) */}
+        <span
+          className={`font-heading font-black tracking-tight transition-colors ml-0.5 ${
+            isDark
+              ? 'text-white group-hover:text-slate-100'
+              : 'text-slate-900 group-hover:text-slate-800'
+          } ${titleSizes}`}
+        >
+          Magazine
+        </span>
 
-          {/* Dynamic Editorial Dot Accent */}
-          <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mb-1 ml-0.5 animate-pulse" />
-        </div>
-
-        {/* 3. Refined Editorial Tagline Kicker */}
-        {showTagline && (
-          <span
-            className={`font-mono font-bold uppercase ${
-              isDark ? 'text-slate-400' : 'text-slate-400'
-            } ${taglineSizes}`}
-          >
-            Digital Editorial
-          </span>
-        )}
+        {/* Dynamic Editorial Dot Accent */}
+        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mb-1 ml-0.5 animate-pulse" />
       </div>
     </div>
   );

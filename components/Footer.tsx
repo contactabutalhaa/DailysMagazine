@@ -70,6 +70,17 @@ export default function Footer() {
                 <Rss className="w-4 h-4" />
               </a>
             </div>
+
+            {/* Direct Editorial Contact Email */}
+            <div className="pt-2">
+              <a
+                href="mailto:lucamarvass@gmail.com"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-orange-500/10 text-slate-300 hover:text-orange-400 border border-slate-700/80 hover:border-orange-500/40 text-xs font-semibold transition-all group"
+              >
+                <Mail className="w-3.5 h-3.5 text-orange-400 group-hover:scale-110 transition-transform" />
+                <span>lucamarvass@gmail.com</span>
+              </a>
+            </div>
           </div>
 
           {/* Quick Subscribe Input */}
@@ -194,6 +205,15 @@ export default function Footer() {
                 <Link href="/contact" className="text-slate-300 hover:text-orange-400 transition-colors">
                   Contact Editorial Desk
                 </Link>
+              </li>
+              <li className="pt-1">
+                <a
+                  href="mailto:lucamarvass@gmail.com"
+                  className="text-orange-400 hover:text-orange-300 transition-colors font-medium flex items-center gap-1.5 text-xs"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>lucamarvass@gmail.com</span>
+                </a>
               </li>
             </ul>
           </div>

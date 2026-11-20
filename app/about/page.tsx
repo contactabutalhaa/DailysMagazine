@@ -195,9 +195,15 @@ export default function AboutPage() {
             Want to write for DailysMagazine?
           </h3>
           <p className="text-slate-300 text-sm max-w-xl mx-auto">
-            We actively commission original investigative essays, cultural critiques, and industry dispatches from writers worldwide.
+            We actively commission original investigative essays, cultural critiques, and industry dispatches from writers worldwide. Reach our editorial desk directly at{' '}
+            <a
+              href="mailto:lucamarvass@gmail.com"
+              className="text-orange-400 hover:text-orange-300 underline font-semibold transition-colors"
+            >
+              lucamarvass@gmail.com
+            </a>.
           </p>
-          <div className="pt-2">
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/write-for-us"
               className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm rounded-xl transition-all shadow-md"
@@ -205,6 +211,12 @@ export default function AboutPage() {
               <span>Read Contributor Guidelines</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
+            <a
+              href="mailto:lucamarvass@gmail.com"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-sm rounded-xl transition-all border border-slate-700"
+            >
+              <span>Email Editorial Desk</span>
+            </a>
           </div>
         </div>
       </section>

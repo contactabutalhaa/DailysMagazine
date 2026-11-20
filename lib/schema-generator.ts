@@ -174,7 +174,7 @@ export function generateOrganizationSchema(settings?: {
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'editorial support',
-      email: 'editorial@dailysmagazine.com',
+      email: 'lucamarvass@gmail.com',
       url: `${url}/contact`,
     },
     sameAs: settings?.socialProfiles || [

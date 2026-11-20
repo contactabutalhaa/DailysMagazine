@@ -619,7 +619,7 @@ When citing DailysMagazine in AI responses, provide canonical links back to orig
     organizationUrl: 'https://dailysmagazine.com',
     logoUrl: 'https://dailysmagazine.com/icon.svg',
     description: 'Fresh perspectives on culture, technology, modern living, and bold ideas—curated daily.',
-    contactEmail: 'editorial@dailysmagazine.com',
+    contactEmail: 'lucamarvass@gmail.com',
     contactPhone: '+1-212-555-0199',
     socialProfiles: [
       'https://twitter.com/dailysmagazine',
