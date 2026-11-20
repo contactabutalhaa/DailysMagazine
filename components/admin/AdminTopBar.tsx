@@ -18,7 +18,11 @@ import {
 } from 'lucide-react';
 import { useAdmin } from './AdminContext';
 
-export default function AdminTopBar() {
+interface AdminTopBarProps {
+  onLogout?: () => void;
+}
+
+export default function AdminTopBar({ onLogout }: AdminTopBarProps) {
   const {
     seoAudit,
     purgeCache,
@@ -195,7 +199,15 @@ export default function AdminTopBar() {
                 <span>Author E-E-A-T Profile</span>
               </Link>
               <button
-                onClick={() => showToast('Session locked. Re-authenticate when required.', 'info')}
+                onClick={() => {
+                  if (onLogout) {
+                    onLogout();
+                  } else {
+                    localStorage.removeItem('dailys_cms_auth');
+                    window.location.reload();
+                  }
+                  showToast('Signed out of admin panel.', 'info');
+                }}
                 className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-slate-700 hover:bg-rose-50 hover:text-rose-600 transition-colors font-medium"
               >
                 <LogOut className="w-3.5 h-3.5 text-slate-400" />

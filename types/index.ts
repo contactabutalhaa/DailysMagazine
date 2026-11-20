@@ -47,6 +47,7 @@ export interface Article {
   tags: string[];
   content: {
     leadParagraph: string;
+    rawHtml?: string;
     sections: {
       heading: string;
       subheading?: string;

@@ -1,18 +1,56 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdmin } from './AdminContext';
 import AdminTopBar from './AdminTopBar';
 import AdminSidebar from './AdminSidebar';
+import AdminLoginScreen from './AdminLoginScreen';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 export default function AdminLayoutWrapper({ children }: { children: React.ReactNode }) {
   const { toasts, removeToast } = useAdmin();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Check authentication on client mount
+    const auth = localStorage.getItem('dailys_cms_auth');
+    if (auth === 'true') {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('dailys_cms_auth');
+    localStorage.removeItem('dailys_cms_user');
+    document.cookie = 'dailys_cms_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    setIsAuthenticated(false);
+  };
+
+  // Prevent layout shift during initial auth check
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Loading CMS Workspace...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // If not authenticated, show password login screen
+  if (!isAuthenticated) {
+    return <AdminLoginScreen onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#F8FAFC] text-slate-900 antialiased">
       {/* 48px Top Bar */}
-      <AdminTopBar />
+      <AdminTopBar onLogout={handleLogout} />
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}

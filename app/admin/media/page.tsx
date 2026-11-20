@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Image from 'next/image';
 import {
   UploadCloud,
@@ -10,17 +10,20 @@ import {
   Copy,
   AlertTriangle,
   X,
+  FolderOpen,
 } from 'lucide-react';
 import { useAdmin } from '@/components/admin/AdminContext';
 import { MediaItem } from '@/types/admin';
 
 export default function MediaLibraryPage() {
   const { media, addMedia, updateMedia, deleteMedia, showToast } = useAdmin();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   // New Upload Form State
   const [newTitle, setNewTitle] = useState('');
@@ -77,6 +80,41 @@ export default function MediaLibraryPage() {
     showToast('Asset uploaded to Media Library!', 'success');
   };
 
+  const handleFileUpload = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WebP, GIF)', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      const cleanTitle = file.name
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      const sizeStr = Math.round(file.size / 1024) + ' KB';
+      const formatStr = file.type.split('/')[1]?.toUpperCase() || 'JPEG';
+
+      const created = addMedia({
+        url: dataUrl,
+        altText: cleanTitle,
+        title: cleanTitle,
+        caption: '',
+        dimensions: 'Auto',
+        fileSize: sizeStr,
+        format: formatStr,
+        isWebPOrAvif: formatStr.toLowerCase() === 'webp' || formatStr.toLowerCase() === 'avif',
+      });
+
+      setSelectedItem(created);
+      setIsUploading(false);
+      showToast(`Asset "${file.name}" uploaded to Media Library!`, 'success');
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Check if size is over 150KB
   const isSizeOver150KB = (sizeStr?: string) => {
     if (!sizeStr) return false;
@@ -88,17 +126,37 @@ export default function MediaLibraryPage() {
 
   return (
     <div className="space-y-6">
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFileUpload(file);
+        }}
+      />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold font-serif text-slate-900">Media Library</h1>
-            <button
-              onClick={() => setIsUploading(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-md shadow-xs transition"
-            >
-              <UploadCloud className="w-3.5 h-3.5" /> Add New Media
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold rounded-md shadow-xs transition"
+              >
+                <UploadCloud className="w-3.5 h-3.5" /> Upload Image
+              </button>
+              <button
+                onClick={() => setIsUploading(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-md shadow-xs transition"
+              >
+                <span>Add from URL</span>
+              </button>
+            </div>
           </div>
           <p className="text-xs text-slate-500 mt-1">
             Manage magazine assets, Alt Text SEO validation, WebP compression, and image weights.
@@ -156,6 +214,35 @@ export default function MediaLibraryPage() {
               <button onClick={() => setIsUploading(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* File Drop Area */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDraggingOver(true);
+              }}
+              onDragLeave={() => setIsDraggingOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingOver(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleFileUpload(file);
+              }}
+              onClick={() => fileInputRef.current?.click()}
+              className={`p-6 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
+                isDraggingOver ? 'border-orange-500 bg-orange-50' : 'border-slate-200 hover:border-slate-300 bg-slate-50'
+              }`}
+            >
+              <UploadCloud className="w-8 h-8 text-orange-500 mb-2" />
+              <p className="text-xs font-bold text-slate-700">Click or Drag & Drop image file from device</p>
+              <p className="text-[11px] text-slate-400 mt-1">PNG, JPG, WebP, AVIF up to 10MB</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-slate-200" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Or Add by URL</span>
+              <div className="flex-1 h-px bg-slate-200" />
             </div>
 
             <form onSubmit={handleCreateMedia} className="space-y-3 text-xs">

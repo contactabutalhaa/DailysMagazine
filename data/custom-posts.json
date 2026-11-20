@@ -1,0 +1,19 @@
+[
+  {
+    "id": "post-test-1",
+    "title": "AI in Art Galleries: The New Renaissance",
+    "slug": "ai-in-art-galleries-test",
+    "category": "culture",
+    "categoryName": "Culture",
+    "status": "published",
+    "content": "<h2>The Creative Shift</h2><p>Galleries worldwide are showcasing computational art.</p>",
+    "excerpt": "A look into modern creative shifts.",
+    "authorId": "author-1",
+    "tags": [
+      "Art",
+      "AI"
+    ],
+    "coverImage": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80",
+    "publishedAt": "Nov 20, 2026"
+  }
+]

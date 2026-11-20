@@ -10,8 +10,20 @@ import SocialShareButtons from '@/components/SocialShareButtons';
 import AuthorBioCard from '@/components/AuthorBioCard';
 import ArticleCard from '@/components/ArticleCard';
 import { getArticleBySlug, getRelatedArticles, ARTICLES } from '@/data/articles';
+import { getCustomPosts, convertCmsPostToArticle } from '@/lib/posts-storage';
 import { CATEGORIES } from '@/data/categories';
 import { generatePostJsonLd } from '@/lib/schema-generator';
+
+function resolveArticle(slug: string) {
+  const staticArt = getArticleBySlug(slug);
+  if (staticArt) return staticArt;
+  try {
+    const custom = getCustomPosts();
+    const match = custom.find((p) => p.slug === slug);
+    if (match) return convertCmsPostToArticle(match);
+  } catch (err) {}
+  return undefined;
+}
 
 interface ArticlePageProps {
   params: {
@@ -19,6 +31,9 @@ interface ArticlePageProps {
     slug: string;
   };
 }
+
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 export function generateStaticParams() {
   return ARTICLES.map((article) => ({
@@ -28,7 +43,7 @@ export function generateStaticParams() {
 }
 
 export function generateMetadata({ params }: ArticlePageProps): Metadata {
-  const article = getArticleBySlug(params.slug);
+  const article = resolveArticle(params.slug);
   if (!article) {
     return {
       title: 'Story Not Found | DailysMagazine',
@@ -60,7 +75,7 @@ export function generateMetadata({ params }: ArticlePageProps): Metadata {
 }
 
 export default function ArticlePage({ params }: ArticlePageProps) {
-  const article = getArticleBySlug(params.slug);
+  const article = resolveArticle(params.slug);
 
   if (!article) {
     notFound();
@@ -214,92 +229,101 @@ export default function ArticlePage({ params }: ArticlePageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           {/* Main Story Body (720px max-width equivalent in 8 cols) */}
           <div className="lg:col-span-8 space-y-8">
-            {/* Lead Paragraph with Stylized Drop-Cap */}
-            <p className="drop-cap text-[17px] leading-[1.7] text-slate-700 font-normal">
-              {article.content.leadParagraph}
-            </p>
+            {article.content.rawHtml ? (
+              <div
+                className="article-rich-body space-y-6 text-[17px] leading-[1.7] text-slate-700 font-normal [&_h2]:font-heading [&_h2]:font-extrabold [&_h2]:text-2xl [&_h2]:sm:text-3xl [&_h2]:text-slate-900 [&_h2]:tracking-tight [&_h2]:pt-4 [&_h2]:border-t [&_h2]:border-slate-100 [&_h3]:font-heading [&_h3]:font-bold [&_h3]:text-xl [&_h3]:text-slate-900 [&_h4]:font-heading [&_h4]:font-bold [&_h4]:text-lg [&_h4]:text-slate-900 [&_blockquote]:my-6 [&_blockquote]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-orange-500 [&_blockquote]:py-3 [&_blockquote]:bg-orange-50/50 [&_blockquote]:rounded-r-2xl [&_blockquote]:pr-4 [&_blockquote]:italic [&_blockquote]:text-slate-900 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:space-y-2 [&_li]:text-slate-700 [&_a]:text-orange-600 [&_a]:underline [&_a]:font-semibold [&_p]:text-[17px] [&_p]:leading-[1.7] [&_p]:text-slate-700 [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-slate-200 [&_th]:bg-slate-50 [&_th]:p-2.5 [&_th]:text-left [&_td]:border [&_td]:border-slate-200 [&_td]:p-2.5 [&_img]:rounded-2xl [&_img]:shadow-md [&_img]:my-6"
+                dangerouslySetInnerHTML={{ __html: article.content.rawHtml }}
+              />
+            ) : (
+              <>
+                {/* Lead Paragraph with Stylized Drop-Cap */}
+                <p className="drop-cap text-[17px] leading-[1.7] text-slate-700 font-normal">
+                  {article.content.leadParagraph}
+                </p>
 
-            {/* Structured Sections */}
-            {article.content.sections.map((section, idx) => {
-              const headingId = slugify(section.heading);
-              return (
-                <section key={idx} id={headingId} className="space-y-6 pt-2 scroll-mt-28">
-                  {/* H2 Heading */}
-                  <h2 className="font-heading font-extrabold text-2xl sm:text-3xl text-slate-900 tracking-tight pt-4 border-t border-slate-100">
-                    {section.heading}
-                  </h2>
+                {/* Structured Sections */}
+                {article.content.sections.map((section, idx) => {
+                  const headingId = slugify(section.heading);
+                  return (
+                    <section key={idx} id={headingId} className="space-y-6 pt-2 scroll-mt-28">
+                      {/* H2 Heading */}
+                      <h2 className="font-heading font-extrabold text-2xl sm:text-3xl text-slate-900 tracking-tight pt-4 border-t border-slate-100">
+                        {section.heading}
+                      </h2>
 
-                  {/* Optional Subheading */}
-                  {section.subheading && (
-                    <h3 className="font-heading font-bold text-base text-orange-600 uppercase tracking-wide">
-                      {section.subheading}
-                    </h3>
-                  )}
-
-                  {/* Body Paragraphs */}
-                  {section.body.map((paragraph, pIdx) => (
-                    <p
-                      key={pIdx}
-                      className="text-[17px] leading-[1.7] text-slate-700 font-normal"
-                    >
-                      {paragraph}
-                    </p>
-                  ))}
-
-                  {/* Left-Bordered Orange Callout / Blockquote */}
-                  {section.quote && (
-                    <div className="my-8 pl-6 border-l-4 border-orange-500 py-3 bg-orange-50/50 rounded-r-2xl pr-4">
-                      <blockquote className="font-heading font-bold text-lg sm:text-xl text-slate-900 leading-snug italic">
-                        &ldquo;{section.quote}&rdquo;
-                      </blockquote>
-                      {section.quoteAuthor && (
-                        <cite className="block text-xs font-semibold text-orange-700 uppercase tracking-wider not-italic mt-2">
-                          — {section.quoteAuthor}
-                        </cite>
+                      {/* Optional Subheading */}
+                      {section.subheading && (
+                        <h3 className="font-heading font-bold text-base text-orange-600 uppercase tracking-wide">
+                          {section.subheading}
+                        </h3>
                       )}
-                    </div>
-                  )}
 
-                  {/* Key Takeaways Bullet Box */}
-                  {section.takeaways && section.takeaways.length > 0 && (
-                    <div className="my-8 p-6 bg-slate-50 border border-slate-200/90 rounded-2xl">
-                      <div className="flex items-center gap-2 mb-3">
-                        <BookOpen className="w-4 h-4 text-orange-600" />
-                        <h4 className="font-heading font-extrabold text-xs uppercase tracking-wider text-slate-900">
-                          Key Editorial Takeaways
-                        </h4>
-                      </div>
-                      <ul className="space-y-2.5">
-                        {section.takeaways.map((point, tIdx) => (
-                          <li key={tIdx} className="flex items-start gap-2.5 text-sm text-slate-700">
-                            <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                            <span className="leading-relaxed">{point}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                      {/* Body Paragraphs */}
+                      {section.body.map((paragraph, pIdx) => (
+                        <p
+                          key={pIdx}
+                          className="text-[17px] leading-[1.7] text-slate-700 font-normal"
+                        >
+                          {paragraph}
+                        </p>
+                      ))}
 
-                  {/* Inline Image */}
-                  {section.inlineImage && (
-                    <div className="my-8 rounded-2xl overflow-hidden border border-slate-200/90 bg-slate-50">
-                      <div className="relative aspect-[16/9] w-full">
-                        <Image
-                          src={section.inlineImage.url}
-                          alt={section.inlineImage.caption}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 720px"
-                          className="object-cover"
-                        />
-                      </div>
-                      <p className="text-xs text-slate-500 italic p-3 text-center">
-                        {section.inlineImage.caption}
-                      </p>
-                    </div>
-                  )}
-                </section>
-              );
-            })}
+                      {/* Left-Bordered Orange Callout / Blockquote */}
+                      {section.quote && (
+                        <div className="my-8 pl-6 border-l-4 border-orange-500 py-3 bg-orange-50/50 rounded-r-2xl pr-4">
+                          <blockquote className="font-heading font-bold text-lg sm:text-xl text-slate-900 leading-snug italic">
+                            &ldquo;{section.quote}&rdquo;
+                          </blockquote>
+                          {section.quoteAuthor && (
+                            <cite className="block text-xs font-semibold text-orange-700 uppercase tracking-wider not-italic mt-2">
+                              — {section.quoteAuthor}
+                            </cite>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Key Takeaways Bullet Box */}
+                      {section.takeaways && section.takeaways.length > 0 && (
+                        <div className="my-8 p-6 bg-slate-50 border border-slate-200/90 rounded-2xl">
+                          <div className="flex items-center gap-2 mb-3">
+                            <BookOpen className="w-4 h-4 text-orange-600" />
+                            <h4 className="font-heading font-extrabold text-xs uppercase tracking-wider text-slate-900">
+                              Key Editorial Takeaways
+                            </h4>
+                          </div>
+                          <ul className="space-y-2.5">
+                            {section.takeaways.map((point, tIdx) => (
+                              <li key={tIdx} className="flex items-start gap-2.5 text-sm text-slate-700">
+                                <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                                <span className="leading-relaxed">{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Inline Image */}
+                      {section.inlineImage && (
+                        <div className="my-8 rounded-2xl overflow-hidden border border-slate-200/90 bg-slate-50">
+                          <div className="relative aspect-[16/9] w-full">
+                            <Image
+                              src={section.inlineImage.url}
+                              alt={section.inlineImage.caption}
+                              fill
+                              sizes="(max-width: 768px) 100vw, 720px"
+                              className="object-cover"
+                            />
+                          </div>
+                          <p className="text-xs text-slate-500 italic p-3 text-center">
+                            {section.inlineImage.caption}
+                          </p>
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+              </>
+            )}
 
             {/* Clickable Respective Category Topics Tags */}
             <div className="pt-8 border-t border-slate-200">

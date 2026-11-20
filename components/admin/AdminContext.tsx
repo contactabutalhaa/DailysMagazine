@@ -81,6 +81,17 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   // Load from store on mount
   useEffect(() => {
     refreshAll();
+    // Fetch custom posts from disk API to sync
+    fetch('/api/posts')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          data.forEach((p) => cmsStore.savePost(p));
+          refreshAll();
+        }
+      })
+      .catch(() => {});
+
     const savedDark = localStorage.getItem('dailys_admin_dark_mode');
     if (savedDark === 'true') {
       setDarkMode(true);
@@ -123,6 +134,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const savePost = (postData: Partial<CmsPost> & { title: string }) => {
     const saved = cmsStore.savePost(postData);
     refreshAll();
+    // Persist to server /api/posts immediately
+    try {
+      fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(saved),
+      }).catch((e) => console.error('Failed to sync post with server:', e));
+    } catch (e) {}
     showToast(`Post "${saved.title}" saved successfully (${saved.status.toUpperCase()}).`);
     return saved;
   };
@@ -132,6 +151,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const title = post?.title || 'Post';
     cmsStore.deletePost(id);
     refreshAll();
+    try {
+      fetch(`/api/posts?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
+    } catch (e) {}
     showToast(`Post "${title}" permanently deleted.`, 'error');
   };
 

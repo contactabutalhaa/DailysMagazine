@@ -1220,29 +1220,35 @@ export const ARTICLES: Article[] = [
 ];
 
 // Helper functions for easy data querying
+export function getAllArticles(): Article[] {
+  return ARTICLES;
+}
+
 export function getArticleBySlug(slug: string): Article | undefined {
   return ARTICLES.find((a) => a.slug === slug);
 }
 
 export function getArticlesByCategory(category: string): Article[] {
-  return ARTICLES.filter((a) => a.category === category);
+  return getAllArticles().filter((a) => a.category === category);
 }
 
 export function getFeaturedArticle(): Article {
-  return ARTICLES.find((a) => a.featured) || ARTICLES[0];
+  const all = getAllArticles();
+  return all.find((a) => a.featured) || all[0];
 }
 
 export function getTrendingArticles(): Article[] {
-  return ARTICLES.filter((a) => a.trending);
+  return getAllArticles().filter((a) => a.trending);
 }
 
 export function getMustReadArticles(): Article[] {
-  return ARTICLES.filter((a) => a.mustRead);
+  return getAllArticles().filter((a) => a.mustRead);
 }
 
 export function getRelatedArticles(currentSlug: string, category: string, limit = 3): Article[] {
-  return ARTICLES
+  const all = getAllArticles();
+  return all
     .filter((a) => a.slug !== currentSlug && a.category === category)
-    .concat(ARTICLES.filter((a) => a.slug !== currentSlug && a.category !== category))
+    .concat(all.filter((a) => a.slug !== currentSlug && a.category !== category))
     .slice(0, limit);
 }

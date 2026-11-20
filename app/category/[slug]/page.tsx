@@ -7,7 +7,11 @@ import { ArrowLeft, Clock, ArrowRight, Layers, Flame } from 'lucide-react';
 import ArticleCard from '@/components/ArticleCard';
 import { CATEGORIES, CATEGORY_LIST } from '@/data/categories';
 import { getArticlesByCategory, ARTICLES } from '@/data/articles';
+import { getCustomPosts, convertCmsPostToArticle } from '@/lib/posts-storage';
 import { CategorySlug } from '@/types';
+
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 interface CategoryPageProps {
   params: {
@@ -41,7 +45,12 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     notFound();
   }
 
-  const articles = getArticlesByCategory(category.slug);
+  let articles = getArticlesByCategory(category.slug);
+  try {
+    const custom = getCustomPosts().filter((p) => p.status === 'published' && p.category?.toLowerCase() === category.slug);
+    const converted = custom.map(convertCmsPostToArticle);
+    articles = [...converted, ...articles];
+  } catch (err) {}
   const leadStory = articles[0];
   const gridArticles = articles.slice(1);
 

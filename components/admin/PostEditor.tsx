@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   Save,
-  Eye,
   Send,
   Trash2,
   Calendar,
@@ -31,19 +30,91 @@ import {
   ExternalLink,
   ChevronDown,
   Plus,
+  UploadCloud,
+  FolderOpen,
+  X,
+  CheckCircle2,
 } from 'lucide-react';
-import { CmsPost, CmsCategory, AuthorProfile, PostStatus, PostSeoData } from '@/types/admin';
+import { CmsPost, CmsCategory, AuthorProfile, PostStatus, PostSeoData, MediaItem } from '@/types/admin';
 import { useAdmin } from './AdminContext';
 import OnPageSeoMetabox from '@/components/seo/OnPageSeoMetabox';
+import { CATEGORIES } from '@/data/categories';
 
 interface PostEditorProps {
   initialPost?: CmsPost;
   isNew?: boolean;
 }
 
+// 8 Primary Editorial Categories definition guaranteed to always be available
+const CORE_EDITORIAL_CATEGORIES = [
+  { slug: 'culture', name: 'Culture', color: 'text-purple-600', bgColor: 'bg-purple-100', dot: 'bg-purple-500' },
+  { slug: 'lifestyle', name: 'Lifestyle', color: 'text-orange-600', bgColor: 'bg-orange-100', dot: 'bg-orange-500' },
+  { slug: 'tech', name: 'Tech', color: 'text-blue-600', bgColor: 'bg-blue-100', dot: 'bg-blue-500' },
+  { slug: 'business', name: 'Business', color: 'text-amber-700', bgColor: 'bg-amber-100', dot: 'bg-amber-500' },
+  { slug: 'ideas', name: 'Ideas', color: 'text-indigo-600', bgColor: 'bg-indigo-100', dot: 'bg-indigo-500' },
+  { slug: 'design', name: 'Design', color: 'text-pink-600', bgColor: 'bg-pink-100', dot: 'bg-pink-500' },
+  { slug: 'climate', name: 'Climate', color: 'text-emerald-700', bgColor: 'bg-emerald-100', dot: 'bg-emerald-500' },
+  { slug: 'wellness', name: 'Wellness', color: 'text-teal-700', bgColor: 'bg-teal-100', dot: 'bg-teal-500' },
+];
+
+// Clean pasted HTML to remove Word / Google Docs junk while preserving editorial formatting
+function cleanPastedHtml(rawHtml: string): string {
+  if (typeof window === 'undefined') return rawHtml;
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(rawHtml, 'text/html');
+
+    // Remove scripts, styles, meta, xml comments
+    const toRemove = doc.querySelectorAll('script, style, meta, link, noscript');
+    toRemove.forEach((el) => el.remove());
+
+    // Clean attributes from elements, keeping useful structural ones
+    const allElements = doc.querySelectorAll('*');
+    allElements.forEach((el) => {
+      const allowedAttrs = ['href', 'src', 'alt', 'title', 'target', 'rel'];
+      const attributes = Array.from(el.attributes);
+      attributes.forEach((attr) => {
+        if (!allowedAttrs.includes(attr.name.toLowerCase())) {
+          el.removeAttribute(attr.name);
+        }
+      });
+      // Convert legacy bold/italic tags
+      if (el.tagName.toLowerCase() === 'b') {
+        const strong = doc.createElement('strong');
+        strong.innerHTML = el.innerHTML;
+        el.replaceWith(strong);
+      } else if (el.tagName.toLowerCase() === 'i') {
+        const em = doc.createElement('em');
+        em.innerHTML = el.innerHTML;
+        el.replaceWith(em);
+      }
+    });
+
+    return doc.body.innerHTML;
+  } catch (err) {
+    return rawHtml;
+  }
+}
+
 export default function PostEditor({ initialPost, isNew = false }: PostEditorProps) {
   const router = useRouter();
-  const { categories, authors, savePost, deletePost, saveCategory, showToast } = useAdmin();
+  const { categories, media, addMedia, authors, savePost, deletePost, saveCategory, showToast } = useAdmin();
+
+  // Combine core categories with any custom categories created in CMS
+  const allCategoriesMap = new Map<string, { slug: string; name: string; dot: string; color: string; bgColor: string }>();
+  CORE_EDITORIAL_CATEGORIES.forEach((c) => allCategoriesMap.set(c.slug, c));
+  categories.forEach((c) => {
+    if (!allCategoriesMap.has(c.slug)) {
+      allCategoriesMap.set(c.slug, {
+        slug: c.slug,
+        name: c.name,
+        dot: 'bg-orange-500',
+        color: c.color || 'text-orange-600',
+        bgColor: c.bgColor || 'bg-orange-100',
+      });
+    }
+  });
+  const allDisplayCategories = Array.from(allCategoriesMap.values());
 
   // Core Form State
   const [title, setTitle] = useState(initialPost?.title || '');
@@ -72,6 +143,12 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
 
   // Editor View Mode: Visual vs HTML
   const [editorMode, setEditorMode] = useState<'visual' | 'html'>('visual');
+  const visualEditorRef = useRef<HTMLDivElement>(null);
+
+  // Featured Image Upload & Media Picker State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   // Link Modal State
   const [linkModalOpen, setLinkModalOpen] = useState(false);
@@ -108,15 +185,25 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
     }
   );
 
+  // Keep visual editor content in sync
+  useEffect(() => {
+    if (editorMode === 'visual' && visualEditorRef.current) {
+      if (visualEditorRef.current.innerHTML !== content) {
+        visualEditorRef.current.innerHTML = content || '<p>Start drafting your story or paste your article content here...</p>';
+      }
+    }
+  }, [editorMode]);
+
   // Word count & stats
   const wordCount = content.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
   const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
   // Headings outline
-  const headingList = (content.match(/<h[2-3][^>]*>(.*?)<\/h[2-3]>/gi) || []).map((h) => {
+  const headingList = (content.match(/<h[2-4][^>]*>(.*?)<\/h[2-4]>/gi) || []).map((h) => {
     const isH2 = h.toLowerCase().startsWith('<h2');
+    const isH3 = h.toLowerCase().startsWith('<h3');
     const text = h.replace(/<[^>]*>/g, '');
-    return { level: isH2 ? 2 : 3, text };
+    return { level: isH2 ? 2 : isH3 ? 3 : 4, text };
   });
 
   // Handle Slug Changes
@@ -164,9 +251,103 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
     setNewCatOpen(false);
   };
 
-  // Rich Text Insertion Helper
+  // Formatting Helper for Visual and HTML modes
+  const applyCommand = (command: string, value: string | undefined = undefined) => {
+    if (editorMode === 'visual') {
+      document.execCommand(command, false, value);
+      if (visualEditorRef.current) {
+        setContent(visualEditorRef.current.innerHTML);
+      }
+    } else {
+      if (command === 'bold') insertFormatting('<strong>', '</strong>');
+      else if (command === 'italic') insertFormatting('<em>', '</em>');
+      else if (command === 'strikeThrough') insertFormatting('<strike>', '</strike>');
+      else if (command === 'insertUnorderedList') insertFormatting('<ul>\n  <li>', '</li>\n</ul>');
+      else if (command === 'insertOrderedList') insertFormatting('<ol>\n  <li>', '</li>\n</ol>');
+    }
+  };
+
   const insertFormatting = (before: string, after: string = '') => {
     setContent((prev) => `${prev}\n${before}Selected text${after}\n`);
+  };
+
+  // Content Paste Handler - preserves rich text and website font styling
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const clipboardHtml = e.clipboardData.getData('text/html');
+    const clipboardText = e.clipboardData.getData('text/plain');
+
+    if (clipboardHtml) {
+      const cleaned = cleanPastedHtml(clipboardHtml);
+      document.execCommand('insertHTML', false, cleaned);
+    } else if (clipboardText) {
+      const paragraphs = clipboardText
+        .split(/\r?\n\r?\n/)
+        .map((p) => `<p>${p.trim().replace(/\r?\n/g, '<br/>')}</p>`)
+        .filter(Boolean)
+        .join('');
+      document.execCommand('insertHTML', false, paragraphs || `<p>${clipboardText}</p>`);
+    }
+
+    if (visualEditorRef.current) {
+      setContent(visualEditorRef.current.innerHTML);
+    }
+    showToast('Pasted content formatted to website editorial style.', 'info');
+  };
+
+  const handleVisualInput = () => {
+    if (visualEditorRef.current) {
+      setContent(visualEditorRef.current.innerHTML);
+    }
+  };
+
+  // Featured Image File Upload Handler
+  const handleImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WebP, GIF).', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const dataUrl = loadEvent.target?.result as string;
+      setCoverImage(dataUrl);
+
+      const cleanTitle = file.name
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      if (!coverImageAlt) {
+        setCoverImageAlt(cleanTitle);
+      }
+
+      // Automatically register asset in media library
+      const sizeStr = Math.round(file.size / 1024) + ' KB';
+      try {
+        addMedia({
+          url: dataUrl,
+          title: cleanTitle,
+          altText: cleanTitle,
+          caption: '',
+          dimensions: 'Auto',
+          fileSize: sizeStr,
+          format: file.type.split('/')[1]?.toUpperCase() || 'JPEG',
+        });
+      } catch (err) {}
+
+      showToast(`Featured image "${file.name}" uploaded successfully!`, 'success');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleImageFile(file);
+    }
   };
 
   const insertLink = () => {
@@ -177,7 +358,16 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
     if (linkRelUgc) rels.push('ugc');
     const relAttr = rels.length > 0 ? ` rel="${rels.join(' ')}"` : '';
     const anchor = `<a href="${linkUrl}"${relAttr} target="_blank">${linkText || linkUrl}</a>`;
-    setContent((prev) => `${prev} ${anchor} `);
+
+    if (editorMode === 'visual') {
+      document.execCommand('insertHTML', false, anchor);
+      if (visualEditorRef.current) {
+        setContent(visualEditorRef.current.innerHTML);
+      }
+    } else {
+      setContent((prev) => `${prev} ${anchor} `);
+    }
+
     setLinkModalOpen(false);
     setLinkUrl('');
     setLinkText('');
@@ -195,12 +385,13 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
 
     const currentStatus = newStatus || status;
     const author = authors.find((a) => a.id === authorId) || authors[0];
-    const catObj = categories.find((c) => c.slug === category);
+    const catObj = allDisplayCategories.find((c) => c.slug === category);
+    const finalSlug = slug || title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
 
     const saved = savePost({
       id: initialPost?.id,
       title: title.trim(),
-      slug: slug || title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-'),
+      slug: finalSlug,
       subtitle: subtitle.trim(),
       excerpt: excerpt.trim() || content.replace(/<[^>]*>/g, '').slice(0, 150),
       content: content,
@@ -218,21 +409,35 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
       featured,
       trending,
       mustRead,
-      seo: seoData,
+      seo: {
+        ...seoData,
+        canonicalUrl: seoData.canonicalUrl || `https://dailysmagazine.com/${category || 'culture'}/${finalSlug}`,
+        seoTitle: seoData.seoTitle || `${title} | DailysMagazine`,
+        metaDescription: seoData.metaDescription || excerpt || subtitle || title,
+      },
     });
 
-    if (isNew) {
+    if (newStatus === 'published' && isNew) {
       router.push(`/admin/posts/${saved.id}`);
     }
   };
 
-  const selectedAuthor = authors.find((a) => a.id === authorId) || authors[0];
-  const catObj = categories.find((c) => c.slug === category);
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
+      {/* Hidden File Input for Image Upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleImageFile(file);
+        }}
+      />
+
       {/* Top Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Link
@@ -305,7 +510,7 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
               />
             </div>
 
-            {/* Editable Permalink Slug Bar */}
+            {/* Editable Permalink Slug Bar with Dynamic Category */}
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200/80">
               <span className="font-bold text-slate-700">Permalink:</span>
               <span className="text-slate-400">https://dailysmagazine.com/{category || 'culture'}/</span>
@@ -367,7 +572,7 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
             </div>
           </div>
 
-          {/* WordPress Rich Block / Content Editor */}
+          {/* WordPress Rich Block / Content Editor with Exact Website Typography */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden">
             {/* Toolbar */}
             <div className="bg-slate-50 border-b border-slate-200 p-2.5 flex flex-wrap items-center justify-between gap-2">
@@ -376,9 +581,9 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
                 <select
                   onChange={(e) => {
                     const tag = e.target.value;
-                    if (tag) insertFormatting(`<${tag}>`, `</${tag}>`);
+                    if (tag) applyCommand('formatBlock', `<${tag}>`);
                   }}
-                  className="px-2 py-1 bg-white border border-slate-300 rounded-lg font-semibold text-xs text-slate-800"
+                  className="px-2 py-1 bg-white border border-slate-300 rounded-lg font-semibold text-xs text-slate-800 cursor-pointer"
                 >
                   <option value="">Headings</option>
                   <option value="h2">Heading 2 (H2)</option>
@@ -392,24 +597,24 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
                 {/* Inline formats */}
                 <button
                   type="button"
-                  onClick={() => insertFormatting('<strong>', '</strong>')}
-                  className="p-1.5 rounded hover:bg-slate-200"
+                  onClick={() => applyCommand('bold')}
+                  className="p-1.5 rounded hover:bg-slate-200 transition-colors"
                   title="Bold"
                 >
                   <Bold className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => insertFormatting('<em>', '</em>')}
-                  className="p-1.5 rounded hover:bg-slate-200"
+                  onClick={() => applyCommand('italic')}
+                  className="p-1.5 rounded hover:bg-slate-200 transition-colors"
                   title="Italic"
                 >
                   <Italic className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => insertFormatting('<strike>', '</strike>')}
-                  className="p-1.5 rounded hover:bg-slate-200"
+                  onClick={() => applyCommand('strikeThrough')}
+                  className="p-1.5 rounded hover:bg-slate-200 transition-colors"
                   title="Strikethrough"
                 >
                   <Strikethrough className="w-4 h-4" />
@@ -420,36 +625,40 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
                 {/* Lists & Quotes */}
                 <button
                   type="button"
-                  onClick={() => insertFormatting('<ul>\n  <li>', '</li>\n</ul>')}
-                  className="p-1.5 rounded hover:bg-slate-200"
+                  onClick={() => applyCommand('insertUnorderedList')}
+                  className="p-1.5 rounded hover:bg-slate-200 transition-colors"
                   title="Bullet List"
                 >
                   <List className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => insertFormatting('<ol>\n  <li>', '</li>\n</ol>')}
-                  className="p-1.5 rounded hover:bg-slate-200"
+                  onClick={() => applyCommand('insertOrderedList')}
+                  className="p-1.5 rounded hover:bg-slate-200 transition-colors"
                   title="Numbered List"
                 >
                   <ListOrdered className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => insertFormatting('<blockquote>', '</blockquote>')}
-                  className="p-1.5 rounded hover:bg-slate-200"
+                  onClick={() => {
+                    if (editorMode === 'visual') {
+                      document.execCommand(
+                        'insertHTML',
+                        false,
+                        '<blockquote>&ldquo;Compelling quote statement goes here.&rdquo; &mdash; <cite>Quote Attribution</cite></blockquote><p></p>'
+                      );
+                      handleVisualInput();
+                    } else {
+                      insertFormatting('<blockquote>', '</blockquote>');
+                    }
+                  }}
+                  className="p-1.5 rounded hover:bg-slate-200 transition-colors"
                   title="Blockquote"
                 >
                   <Quote className="w-4 h-4" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('<pre><code>', '</code></pre>')}
-                  className="p-1.5 rounded hover:bg-slate-200"
-                  title="Code Block"
-                >
-                  <Code className="w-4 h-4" />
-                </button>
+
                 <button
                   type="button"
                   onClick={() =>
@@ -457,7 +666,7 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
                       '<table class="w-full border">\n  <thead><tr><th class="border p-2">Column 1</th><th class="border p-2">Column 2</th></tr></thead>\n  <tbody><tr><td class="border p-2">Data 1</td><td class="border p-2">Data 2</td></tr></tbody>\n</table>'
                     )
                   }
-                  className="p-1.5 rounded hover:bg-slate-200"
+                  className="p-1.5 rounded hover:bg-slate-200 transition-colors"
                   title="Table"
                 >
                   <TableIcon className="w-4 h-4" />
@@ -469,7 +678,7 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
                 <button
                   type="button"
                   onClick={() => setLinkModalOpen(true)}
-                  className="p-1.5 rounded hover:bg-slate-200 text-blue-600 font-bold flex items-center gap-1"
+                  className="p-1.5 rounded hover:bg-slate-200 text-blue-600 font-bold flex items-center gap-1 transition-colors"
                   title="Insert Link with SEO attributes"
                 >
                   <LinkIcon className="w-4 h-4" />
@@ -486,11 +695,16 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
                     editorMode === 'visual' ? 'bg-orange-500 text-white shadow-xs' : 'text-slate-600 hover:text-orange-600'
                   }`}
                 >
-                  Visual
+                  Visual (Rich Text)
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEditorMode('html')}
+                  onClick={() => {
+                    if (visualEditorRef.current) {
+                      setContent(visualEditorRef.current.innerHTML);
+                    }
+                    setEditorMode('html');
+                  }}
                   className={`px-2.5 py-1 rounded transition-colors ${
                     editorMode === 'html' ? 'bg-orange-500 text-white shadow-xs' : 'text-slate-600 hover:text-orange-600'
                   }`}
@@ -500,23 +714,41 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
               </div>
             </div>
 
-            {/* Editor Canvas */}
-            <div className="p-4 sm:p-6 min-h-[380px]">
+            {/* Editor Canvas with Website Font Styling */}
+            <div className="min-h-[460px]">
               {editorMode === 'html' ? (
-                <textarea
-                  rows={18}
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Enter HTML or raw article markup..."
-                  className="w-full font-mono text-xs text-slate-800 bg-slate-50 p-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500 leading-relaxed"
-                />
+                <div className="p-4 sm:p-6">
+                  <textarea
+                    rows={20}
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="Enter HTML or raw article markup..."
+                    className="w-full font-mono text-xs text-slate-800 bg-slate-50 p-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500 leading-relaxed"
+                  />
+                </div>
               ) : (
-                <textarea
-                  rows={18}
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Draft your story body content here with headings, paragraphs, and quotes..."
-                  className="w-full text-sm leading-relaxed text-slate-800 focus:outline-none resize-y"
+                /* Rich Text Visual Canvas matching front-end website typography exactly */
+                <div
+                  ref={visualEditorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={handleVisualInput}
+                  onPaste={handlePaste}
+                  className="w-full min-h-[460px] p-6 focus:outline-none font-body text-[17px] leading-[1.7] text-slate-700 bg-white
+                  [&_h1]:font-heading [&_h1]:font-extrabold [&_h1]:text-3xl [&_h1]:text-slate-900 [&_h1]:mb-4
+                  [&_h2]:font-heading [&_h2]:font-extrabold [&_h2]:text-2xl [&_h2]:text-slate-900 [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:pt-4 [&_h2]:border-t [&_h2]:border-slate-100
+                  [&_h3]:font-heading [&_h3]:font-bold [&_h3]:text-xl [&_h3]:text-slate-900 [&_h3]:mt-5 [&_h3]:mb-2
+                  [&_h4]:font-heading [&_h4]:font-bold [&_h4]:text-lg [&_h4]:text-slate-900 [&_h4]:mt-4 [&_h4]:mb-2
+                  [&_p]:mb-4 [&_p]:leading-[1.7]
+                  [&_blockquote]:my-6 [&_blockquote]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-orange-500 [&_blockquote]:py-3 [&_blockquote]:bg-orange-50/50 [&_blockquote]:rounded-r-2xl [&_blockquote]:pr-4 [&_blockquote]:italic [&_blockquote]:font-serif [&_blockquote]:text-slate-900
+                  [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ul]:space-y-1.5
+                  [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_ol]:space-y-1.5
+                  [&_li]:text-slate-700
+                  [&_a]:text-orange-600 [&_a]:underline [&_a]:font-semibold
+                  [&_table]:w-full [&_table]:border-collapse [&_table]:my-4
+                  [&_th]:border [&_th]:border-slate-200 [&_th]:bg-slate-50 [&_th]:p-2.5 [&_th]:text-left [&_th]:font-bold
+                  [&_td]:border [&_td]:border-slate-200 [&_td]:p-2.5
+                  [&_img]:rounded-2xl [&_img]:shadow-md [&_img]:my-6 [&_img]:max-w-full"
                 />
               )}
             </div>
@@ -551,14 +783,16 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
                     </span>
                   ))}
                   {headingList.length > 4 && (
-                    <span className="text-[10px] text-slate-400">+{headingList.length - 4} more</span>
+                    <span className="text-[10px] text-slate-400 font-semibold">
+                      +{headingList.length - 4} more
+                    </span>
                   )}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Embedded On-Page SEO Metabox (RankMath / Yoast style) */}
+          {/* On-Page SEO & Schema Metabox */}
           <OnPageSeoMetabox
             title={title}
             slug={slug}
@@ -566,46 +800,30 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
             excerpt={excerpt}
             coverImage={coverImage}
             coverImageAlt={coverImageAlt}
-            categoryName={catObj?.name || 'Culture'}
-            authorName={selectedAuthor?.name || 'Elena Vance'}
-            authorAvatar={selectedAuthor?.avatar}
+            categoryName={allDisplayCategories.find((c) => c.slug === category)?.name || 'Culture'}
+            authorName={authors.find((a) => a.id === authorId)?.name || 'Elena Vance'}
+            authorAvatar={authors.find((a) => a.id === authorId)?.avatar}
             publishedAt={publishDate}
             seoData={seoData}
-            onChange={(updated) => setSeoData(updated)}
+            onChange={(updatedSeo) => setSeoData(updatedSeo)}
           />
         </div>
 
         {/* Right Sidebar (4 cols ~ 30%) */}
         <div className="lg:col-span-4 space-y-6">
-          {/* 1. Publish Metabox */}
+          {/* 1. Publish / Status Metabox */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-slate-900">
-                Publishing Controls
-              </h3>
-              <span
-                className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                  status === 'published'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : status === 'scheduled'
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-amber-100 text-amber-800'
-                }`}
-              >
-                {status}
-              </span>
-            </div>
+            <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-2">
+              Publish Settings
+            </h3>
 
             <div className="space-y-3 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-slate-400" />
-                  Status:
-                </span>
+                <span className="text-slate-500 font-medium">Status:</span>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as PostStatus)}
-                  className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-800"
+                  className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold"
                 >
                   <option value="published">Published</option>
                   <option value="draft">Draft</option>
@@ -615,14 +833,11 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-slate-400" />
-                  Visibility:
-                </span>
+                <span className="text-slate-500 font-medium">Visibility:</span>
                 <select
                   value={visibility}
                   onChange={(e) => setVisibility(e.target.value as any)}
-                  className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-800"
+                  className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold"
                 >
                   <option value="public">Public</option>
                   <option value="private">Private</option>
@@ -631,98 +846,81 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  Publish Date:
-                </span>
+                <span className="text-slate-500 font-medium">Publish Date:</span>
                 <input
                   type="text"
                   value={publishDate}
                   onChange={(e) => setPublishDate(e.target.value)}
-                  className="w-32 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-800 text-right"
+                  className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold text-right w-36"
                 />
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-              {initialPost && (
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+              {!isNew && (
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm('Move this post to trash?')) {
-                      deletePost(initialPost.id);
+                    if (confirm('Permanently delete this story?')) {
+                      if (initialPost?.id) deletePost(initialPost.id);
                       router.push('/admin/posts');
                     }
                   }}
-                  className="text-rose-600 hover:text-rose-700 text-xs font-bold"
+                  className="text-rose-600 hover:text-rose-700 text-xs font-semibold flex items-center gap-1"
                 >
-                  Trash
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete</span>
                 </button>
               )}
-              <div className="flex items-center gap-2 ml-auto">
-                <button
-                  type="button"
-                  onClick={() => handleSave()}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md"
-                >
-                  {status === 'published' ? 'Update' : 'Publish'}
-                </button>
-              </div>
+
+              <button
+                type="button"
+                onClick={() => handleSave('published')}
+                className="ml-auto px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm transition-all"
+              >
+                {status === 'published' ? 'Update Post' : 'Publish Story'}
+              </button>
             </div>
           </div>
 
-          {/* 2. Author / Persona Selector */}
+          {/* 2. Author Persona Selector */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5 space-y-3">
             <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-slate-900">
-              Author & E-E-A-T Persona
+              Author (E-E-A-T Persona)
             </h3>
             <select
               value={authorId}
               onChange={(e) => setAuthorId(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800"
             >
-              {authors.map((auth) => (
-                <option key={auth.id} value={auth.id}>
-                  {auth.name} — {auth.role}
+              {authors.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} ({a.role})
                 </option>
               ))}
             </select>
-            {selectedAuthor && (
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-                <div className="relative w-9 h-9 rounded-full overflow-hidden bg-slate-200 shrink-0">
-                  <Image
-                    src={selectedAuthor.avatar}
-                    alt={selectedAuthor.name}
-                    fill
-                    sizes="36px"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-xs text-slate-900 truncate">{selectedAuthor.name}</p>
-                  <p className="text-[11px] text-slate-500 truncate">{selectedAuthor.role}</p>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* 3. Categories Checklist */}
+          {/* 3. Primary Category Checklist - All 8 Categories Guaranteed */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-slate-900">
-                Primary Category
-              </h3>
+              <div>
+                <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-slate-900">
+                  Primary Category
+                </h3>
+                <span className="text-[10px] text-slate-400 font-medium">All 8 Core Sections</span>
+              </div>
               <button
                 type="button"
                 onClick={() => setNewCatOpen(!newCatOpen)}
                 className="text-xs text-orange-600 font-bold flex items-center gap-0.5 hover:underline"
               >
                 <Plus className="w-3 h-3" />
-                <span>Add Category</span>
+                <span>Custom</span>
               </button>
             </div>
 
-            {/* Inline Add Category */}
+            {/* Inline Add Custom Category */}
             {newCatOpen && (
               <form onSubmit={handleCreateCategory} className="p-3 bg-orange-50/60 rounded-xl border border-orange-200 space-y-2">
                 <input
@@ -742,23 +940,44 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
               </form>
             )}
 
-            <div className="max-h-48 overflow-y-auto space-y-2 text-xs">
-              {categories.map((cat) => (
-                <label key={cat.slug} className="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-slate-50 rounded-lg">
-                  <input
-                    type="radio"
-                    name="category"
-                    checked={category === cat.slug}
-                    onChange={() => setCategory(cat.slug as any)}
-                    className="text-orange-600 focus:ring-orange-500"
-                  />
-                  <span className="font-semibold text-slate-800">{cat.name}</span>
-                </label>
-              ))}
+            {/* List of All Categories */}
+            <div className="space-y-1.5 text-xs">
+              {allDisplayCategories.map((cat) => {
+                const isSelected = category === cat.slug;
+                return (
+                  <label
+                    key={cat.slug}
+                    onClick={() => setCategory(cat.slug as any)}
+                    className={`flex items-center justify-between p-2 rounded-xl cursor-pointer border transition-all ${
+                      isSelected
+                        ? 'bg-orange-50/80 border-orange-300 shadow-xs'
+                        : 'bg-white hover:bg-slate-50 border-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className={`w-2.5 h-2.5 rounded-full ${cat.dot} shrink-0`} />
+                      <span className={`font-semibold ${isSelected ? 'text-orange-950 font-bold' : 'text-slate-800'}`}>
+                        {cat.name}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-mono text-slate-400 uppercase">/{cat.slug}</span>
+                      <input
+                        type="radio"
+                        name="primary_category"
+                        checked={isSelected}
+                        onChange={() => setCategory(cat.slug as any)}
+                        className="text-orange-600 focus:ring-orange-500"
+                      />
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           </div>
 
-          {/* 4. Tags Input */}
+          {/* 4. Taxonomy Tags Input */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5 space-y-3">
             <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-slate-900">
               Taxonomy Tags
@@ -788,24 +1007,82 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
             </div>
           </div>
 
-          {/* 5. Featured Image Picker */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5 space-y-3">
-            <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-slate-900">
-              Featured Image
-            </h3>
-            <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
-              <Image
-                src={coverImage}
-                alt={coverImageAlt || 'Featured Image'}
-                fill
-                sizes="300px"
-                className="object-cover"
-              />
+          {/* 5. Featured Image Picker with Direct File Upload */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-slate-900">
+                Featured Cover Image
+              </h3>
+              <button
+                type="button"
+                onClick={() => setMediaPickerOpen(true)}
+                className="text-[11px] font-bold text-orange-600 hover:underline flex items-center gap-1"
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>Media Library</span>
+              </button>
             </div>
 
+            {/* Drag & Drop Upload Zone + Preview */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDraggingOver(true);
+              }}
+              onDragLeave={() => setIsDraggingOver(false)}
+              onDrop={handleDrop}
+              className={`relative aspect-[16/9] w-full rounded-xl overflow-hidden border-2 transition-all group ${
+                isDraggingOver
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-slate-200 hover:border-slate-300 bg-slate-50'
+              }`}
+            >
+              {coverImage ? (
+                <>
+                  <Image
+                    src={coverImage}
+                    alt={coverImageAlt || 'Featured Image'}
+                    fill
+                    sizes="320px"
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-1.5 bg-white text-slate-800 text-xs font-bold rounded-lg shadow-md hover:bg-slate-100 flex items-center gap-1.5"
+                    >
+                      <UploadCloud className="w-3.5 h-3.5 text-orange-600" />
+                      <span>Replace from Computer</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-full flex flex-col items-center justify-center p-4 text-center cursor-pointer"
+                >
+                  <UploadCloud className="w-8 h-8 text-orange-500 mb-2" />
+                  <p className="text-xs font-bold text-slate-700">Click or drag image file here</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Supports PNG, JPG, WebP up to 10MB</p>
+                </div>
+              )}
+            </div>
+
+            {/* Direct Upload Button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-200 flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <UploadCloud className="w-4 h-4 text-orange-600" />
+              <span>Upload Image from Device</span>
+            </button>
+
+            {/* Image URL Input Option */}
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Image URL *
+                Or Image URL
               </label>
               <input
                 type="url"
@@ -816,6 +1093,7 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
               />
             </div>
 
+            {/* Required Alt Text for SEO */}
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1 flex items-center justify-between">
                 <span>Required Alt Text *</span>
@@ -883,6 +1161,68 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
           </div>
         </div>
       </div>
+
+      {/* Media Library Picker Modal */}
+      {mediaPickerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <h4 className="font-heading font-bold text-slate-900 text-base flex items-center gap-2">
+                <FolderOpen className="w-5 h-5 text-orange-500" />
+                Select Image from Media Library
+              </h4>
+              <button onClick={() => setMediaPickerOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {media.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      setCoverImage(item.url);
+                      if (item.altText && !coverImageAlt) {
+                        setCoverImageAlt(item.altText);
+                      }
+                      setMediaPickerOpen(false);
+                      showToast(`Selected "${item.title}" from Media Library`, 'info');
+                    }}
+                    className="group relative aspect-video rounded-xl overflow-hidden border border-slate-200 cursor-pointer hover:border-orange-500 hover:ring-2 hover:ring-orange-500/20 transition-all bg-slate-100"
+                  >
+                    <Image src={item.url} alt={item.title} fill sizes="160px" className="object-cover" />
+                    <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                      <span className="text-[10px] text-white font-semibold truncate">{item.title}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaPickerOpen(false);
+                  fileInputRef.current?.click();
+                }}
+                className="px-3.5 py-1.5 bg-orange-50 text-orange-600 text-xs font-bold rounded-lg hover:bg-orange-100 flex items-center gap-1.5"
+              >
+                <UploadCloud className="w-4 h-4" />
+                <span>Upload New Image</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMediaPickerOpen(false)}
+                className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Link Insertion Modal */}
       {linkModalOpen && (
