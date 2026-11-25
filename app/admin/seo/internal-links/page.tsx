@@ -35,8 +35,8 @@ export default function InternalLinksPage() {
       return mentionsSlug || mentionsKeyword;
     }).length;
 
-    // Outgoing internal links in content
-    const outgoingInternal = (post.content.match(/href="\/article\//g) || []).length;
+    // Outgoing internal links in content (matches root-relative links like /culture/slug or /article/slug)
+    const outgoingInternal = (post.content.match(/href="\/(?!\/)/g) || []).length;
     // Outgoing external links in content
     const outgoingExternal = (post.content.match(/href="https?:\/\//g) || []).length;
 

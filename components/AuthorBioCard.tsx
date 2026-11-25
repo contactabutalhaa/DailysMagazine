@@ -10,14 +10,24 @@ interface AuthorBioCardProps {
 }
 
 export default function AuthorBioCard({ author }: AuthorBioCardProps) {
+  const safeAuthor = author || {
+    name: 'Editorial Staff',
+    role: 'Staff Writer',
+    bio: 'Curated by the DailysMagazine editorial desk.',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+  };
+
+  const avatarUrl = safeAuthor.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400';
+
   return (
     <div className="bg-slate-50 rounded-2xl p-6 sm:p-8 border border-slate-200/90 shadow-subtle my-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
         <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-slate-200 shrink-0 border-2 border-white shadow-md">
           <Image
-            src={author.avatar}
-            alt={author.name}
+            src={avatarUrl}
+            alt={safeAuthor.name || 'Author'}
             fill
+            unoptimized={avatarUrl.startsWith('data:')}
             sizes="80px"
             className="object-cover"
           />
@@ -30,15 +40,15 @@ export default function AuthorBioCard({ author }: AuthorBioCardProps) {
                 Editorial Contributor
               </span>
               <h4 className="font-heading font-extrabold text-xl text-slate-900">
-                {author.name}
+                {safeAuthor.name}
               </h4>
             </div>
 
             {/* Social Icons */}
             <div className="flex items-center space-x-2">
-              {author.twitter && (
+              {safeAuthor.twitter && (
                 <a
-                  href={`https://twitter.com/${author.twitter.replace('@', '')}`}
+                  href={`https://twitter.com/${safeAuthor.twitter.replace('@', '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-1.5 rounded-full bg-white text-slate-600 hover:text-orange-600 hover:bg-orange-50 border border-slate-200 transition-colors"
@@ -47,9 +57,9 @@ export default function AuthorBioCard({ author }: AuthorBioCardProps) {
                   <Twitter className="w-3.5 h-3.5" />
                 </a>
               )}
-              {author.linkedin && (
+              {safeAuthor.linkedin && (
                 <a
-                  href={`https://${author.linkedin}`}
+                  href={`https://${safeAuthor.linkedin}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-1.5 rounded-full bg-white text-slate-600 hover:text-orange-600 hover:bg-orange-50 border border-slate-200 transition-colors"

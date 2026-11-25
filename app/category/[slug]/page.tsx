@@ -147,10 +147,11 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 className="lg:col-span-7 relative aspect-[16/10] lg:aspect-auto min-h-[300px] overflow-hidden bg-slate-100 block"
               >
                 <Image
-                  src={leadStory.coverImage}
+                  src={leadStory.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80'}
                   alt={leadStory.title}
                   fill
                   priority
+                  unoptimized={leadStory.coverImage?.startsWith('data:')}
                   sizes="(max-width: 1024px) 100vw, 58vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
@@ -180,15 +181,16 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                   <div className="flex items-center gap-3">
                     <div className="relative w-9 h-9 rounded-full overflow-hidden bg-slate-200">
                       <Image
-                        src={leadStory.author.avatar}
-                        alt={leadStory.author.name}
+                        src={leadStory.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'}
+                        alt={leadStory.author?.name || 'Author'}
                         fill
+                        unoptimized={leadStory.author?.avatar?.startsWith('data:')}
                         sizes="36px"
                         className="object-cover"
                       />
                     </div>
                     <span className="text-xs font-bold text-slate-800">
-                      By {leadStory.author.name}
+                      By {leadStory.author?.name || 'Editorial Staff'}
                     </span>
                   </div>
 
@@ -263,9 +265,10 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                     >
                       <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-slate-100">
                         <Image
-                          src={art.coverImage}
+                          src={art.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80'}
                           alt={art.title}
                           fill
+                          unoptimized={art.coverImage?.startsWith('data:')}
                           sizes="64px"
                           className="object-cover group-hover:scale-105 transition-transform"
                         />

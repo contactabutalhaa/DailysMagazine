@@ -100,7 +100,8 @@ export default function CategoryShowcase({ initialArticles }: CategoryShowcasePr
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {techIdeasSpotlight.map((article) => {
-            const cat = CATEGORIES[article.category];
+            const cat = CATEGORIES[article.category] || { bgColor: 'bg-blue-100', color: 'text-blue-800' };
+            const cover = article.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80';
             return (
               <div
                 key={article.id}
@@ -111,15 +112,16 @@ export default function CategoryShowcase({ initialArticles }: CategoryShowcasePr
                   className="relative aspect-[16/10] overflow-hidden bg-slate-100 block"
                 >
                   <Image
-                    src={article.coverImage}
+                    src={cover}
                     alt={article.title}
                     fill
+                    unoptimized={cover.startsWith('data:')}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute top-2.5 left-2.5">
                     <span
-                      className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm ${cat.bgColor} ${cat.color}`}
+                      className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm ${cat.bgColor || 'bg-blue-100'} ${cat.color || 'text-blue-800'}`}
                     >
                       {article.categoryName}
                     </span>
@@ -136,7 +138,7 @@ export default function CategoryShowcase({ initialArticles }: CategoryShowcasePr
                     </h4>
                   </div>
                   <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">By {article.author.name}</span>
+                    <span className="text-slate-500 font-medium">By {article.author?.name || 'Editorial Staff'}</span>
                     <span className="text-blue-600 font-bold group-hover:underline">Read →</span>
                   </div>
                 </div>
@@ -180,9 +182,10 @@ export default function CategoryShowcase({ initialArticles }: CategoryShowcasePr
                 className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-800 shadow-xl block"
               >
                 <Image
-                  src={article.coverImage}
+                  src={article.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80'}
                   alt={article.title}
                   fill
+                  unoptimized={article.coverImage?.startsWith('data:')}
                   sizes="(max-width: 768px) 100vw, 33vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-85 group-hover:opacity-100"
                 />
@@ -196,7 +199,7 @@ export default function CategoryShowcase({ initialArticles }: CategoryShowcasePr
 
                 <div className="absolute bottom-4 left-4 right-4 text-white">
                   <span className="text-xs text-rose-300 font-semibold mb-1 block">
-                    {article.readTime} • By {article.author.name}
+                    {article.readTime} • By {article.author?.name || 'Editorial Staff'}
                   </span>
                   <h4 className="font-heading font-extrabold text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-rose-300 transition-colors">
                     {article.title}
@@ -238,42 +241,49 @@ export default function CategoryShowcase({ initialArticles }: CategoryShowcasePr
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left: Featured Business Spotlight Card */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-card flex flex-col justify-between">
-            <div>
-              <div className="relative aspect-[16/9] rounded-xl overflow-hidden mb-4 bg-slate-100">
-                <Image
-                  src={businessList[0].coverImage}
-                  alt={businessList[0].title}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
-                />
-                <div className="absolute top-3 left-3">
-                  <span className="px-2.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800">
-                    Lead Analysis
-                  </span>
+          {(() => {
+            const leadBusiness = businessList[0] || ARTICLES[0];
+            const cover = leadBusiness.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80';
+            return (
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-card flex flex-col justify-between">
+                <div>
+                  <div className="relative aspect-[16/9] rounded-xl overflow-hidden mb-4 bg-slate-100">
+                    <Image
+                      src={cover}
+                      alt={leadBusiness.title}
+                      fill
+                      unoptimized={cover.startsWith('data:')}
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover"
+                    />
+                    <div className="absolute top-3 left-3">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800">
+                        Lead Analysis
+                      </span>
+                    </div>
+                  </div>
+                  <h4 className="font-heading font-extrabold text-xl text-slate-900 hover:text-amber-700 transition-colors mb-2">
+                    <Link href={`/${leadBusiness.category}/${leadBusiness.slug}`}>
+                      {leadBusiness.title}
+                    </Link>
+                  </h4>
+                  <p className="text-slate-600 text-sm leading-relaxed line-clamp-3">
+                    {leadBusiness.excerpt}
+                  </p>
+                </div>
+
+                <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 font-medium">By {leadBusiness.author?.name || 'Editorial Staff'}</span>
+                  <Link
+                    href={`/${leadBusiness.category}/${leadBusiness.slug}`}
+                    className="font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1"
+                  >
+                    Read Deep Dive →
+                  </Link>
                 </div>
               </div>
-              <h4 className="font-heading font-extrabold text-xl text-slate-900 hover:text-amber-700 transition-colors mb-2">
-                <Link href={`/${businessList[0].category}/${businessList[0].slug}`}>
-                  {businessList[0].title}
-                </Link>
-              </h4>
-              <p className="text-slate-600 text-sm leading-relaxed line-clamp-3">
-                {businessList[0].excerpt}
-              </p>
-            </div>
-
-            <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-500 font-medium">By {businessList[0].author.name}</span>
-              <Link
-                href={`/${businessList[0].category}/${businessList[0].slug}`}
-                className="font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1"
-              >
-                Read Deep Dive →
-              </Link>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Right: Crisp Stacked List */}
           <div className="space-y-4 flex flex-col justify-between">
@@ -361,9 +371,10 @@ export default function CategoryShowcase({ initialArticles }: CategoryShowcasePr
                     className="relative aspect-[16/10] overflow-hidden bg-emerald-50 block"
                   >
                     <Image
-                      src={article.coverImage}
+                      src={article.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80'}
                       alt={article.title}
                       fill
+                      unoptimized={article.coverImage?.startsWith('data:')}
                       sizes="(max-width: 768px) 100vw, 33vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -383,7 +394,7 @@ export default function CategoryShowcase({ initialArticles }: CategoryShowcasePr
                   <div className="p-5 flex-1 flex flex-col justify-between">
                     <div>
                       <span className="text-[11px] text-slate-400 font-medium block mb-1">
-                        {article.readTime} • By {article.author.name}
+                        {article.readTime} • By {article.author?.name || 'Editorial Staff'}
                       </span>
                       <h4 className="font-heading font-bold text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-emerald-700 transition-colors mb-2">
                         <Link href={`/${article.category}/${article.slug}`}>{article.title}</Link>

@@ -57,6 +57,9 @@ export async function DELETE(req: NextRequest) {
     }
 
     deleteCustomPost(id);
+    try {
+      cmsStore.deletePost(id);
+    } catch (e) {}
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

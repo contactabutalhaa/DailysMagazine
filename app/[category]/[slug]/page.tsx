@@ -89,18 +89,22 @@ export default function ArticlePage({ params }: ArticlePageProps) {
   const category = CATEGORIES[article.category];
   const relatedArticles = getRelatedArticles(article.slug, article.category, 3);
 
+  const contentBody = Array.isArray(article.content?.sections) && article.content.sections.length > 0
+    ? article.content.sections.map((s) => (Array.isArray(s.body) ? s.body.join(' ') : s.body)).join(' ')
+    : article.content?.leadParagraph || article.excerpt || '';
+
   const jsonLd = generatePostJsonLd({
     title: article.title,
     slug: article.slug,
     categorySlug: article.category,
     excerpt: article.excerpt,
-    content: article.content.sections.map((s) => s.body).join(' '),
-    coverImage: article.coverImage,
+    content: contentBody,
+    coverImage: article.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80',
     publishedAt: article.publishedAt,
     updatedAt: (article as any).updatedAt || article.publishedAt,
-    authorName: article.author.name,
-    authorAvatar: article.author.avatar,
-    authorRole: article.author.role,
+    authorName: article.author?.name || 'Editorial Staff',
+    authorAvatar: article.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+    authorRole: article.author?.role || 'Staff Writer',
     categoryName: article.categoryName,
     schemaType: 'NewsArticle',
   });
@@ -170,9 +174,10 @@ export default function ArticlePage({ params }: ArticlePageProps) {
             <div className="flex items-center gap-3.5">
               <div className="relative w-12 h-12 rounded-full overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
                 <Image
-                  src={article.author.avatar}
-                  alt={article.author.name}
+                  src={article.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'}
+                  alt={article.author?.name || 'Author'}
                   fill
+                  unoptimized={article.author?.avatar?.startsWith('data:')}
                   sizes="48px"
                   className="object-cover"
                 />
@@ -209,10 +214,11 @@ export default function ArticlePage({ params }: ArticlePageProps) {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-10">
         <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-slate-100 shadow-md">
           <Image
-            src={article.coverImage}
+            src={article.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80'}
             alt={article.title}
             fill
             priority
+            unoptimized={article.coverImage?.startsWith('data:')}
             sizes="(max-width: 1024px) 100vw, 1024px"
             className="object-cover"
           />
@@ -308,10 +314,11 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                           <div className="relative aspect-[16/9] w-full">
                             <Image
                               src={section.inlineImage.url}
-                              alt={section.inlineImage.caption}
+                              alt={section.inlineImage.caption || 'Article image'}
                               fill
                               sizes="(max-width: 768px) 100vw, 720px"
                               className="object-cover"
+                              unoptimized={section.inlineImage.url.startsWith('data:')}
                             />
                           </div>
                           <p className="text-xs text-slate-500 italic p-3 text-center">
@@ -363,7 +370,7 @@ export default function ArticlePage({ params }: ArticlePageProps) {
           {/* Right Sticky Rail (4 cols): Auto-generated TOC + Mini Trending List */}
           <aside className="lg:col-span-4 hidden lg:block">
             <TableOfContents
-              sections={article.content.sections}
+              sections={article.content?.sections || []}
               currentSlug={article.slug}
             />
           </aside>

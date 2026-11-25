@@ -65,14 +65,14 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
-  const [posts, setPosts] = useState<CmsPost[]>([]);
-  const [categories, setCategories] = useState<CmsCategory[]>([]);
-  const [tags, setTags] = useState<CmsTag[]>([]);
-  const [pages, setPages] = useState<CmsPage[]>([]);
-  const [media, setMedia] = useState<MediaItem[]>([]);
-  const [authors, setAuthors] = useState<AuthorProfile[]>([]);
-  const [redirects, setRedirects] = useState<RedirectRule[]>([]);
-  const [notFoundLogs, setNotFoundLogs] = useState<NotFoundLog[]>([]);
+  const [posts, setPosts] = useState<CmsPost[]>(() => cmsStore.getPosts());
+  const [categories, setCategories] = useState<CmsCategory[]>(() => cmsStore.getCategories());
+  const [tags, setTags] = useState<CmsTag[]>(() => cmsStore.getTags());
+  const [pages, setPages] = useState<CmsPage[]>(() => cmsStore.getPages());
+  const [media, setMedia] = useState<MediaItem[]>(() => cmsStore.getMedia());
+  const [authors, setAuthors] = useState<AuthorProfile[]>(() => cmsStore.getAuthors());
+  const [redirects, setRedirects] = useState<RedirectRule[]>(() => cmsStore.getRedirects());
+  const [notFoundLogs, setNotFoundLogs] = useState<NotFoundLog[]>(() => cmsStore.getNotFoundLogs());
   const [seoSettings, setSeoSettings] = useState<TechnicalSeoSettings>(cmsStore.getTechnicalSeoSettings());
   const [seoAudit, setSeoAudit] = useState<SeoAuditReport>(cmsStore.getSeoAuditReport());
   const [darkMode, setDarkMode] = useState<boolean>(false);

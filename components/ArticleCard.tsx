@@ -37,9 +37,10 @@ export default function ArticleCard({
         className={`relative w-full ${aspectClass} overflow-hidden bg-slate-100 block`}
       >
         <Image
-          src={article.coverImage}
+          src={article.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80'}
           alt={article.title}
           fill
+          unoptimized={article.coverImage?.startsWith('data:')}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
@@ -85,15 +86,16 @@ export default function ArticleCard({
           <div className="flex items-center gap-2">
             <div className="relative w-6 h-6 rounded-full overflow-hidden bg-slate-200 shrink-0">
               <Image
-                src={article.author.avatar}
-                alt={article.author.name}
+                src={article.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'}
+                alt={article.author?.name || 'Author'}
                 fill
+                unoptimized={article.author?.avatar?.startsWith('data:')}
                 sizes="24px"
                 className="object-cover"
               />
             </div>
             <span className="font-semibold text-slate-700">
-              {article.author.name}
+              {article.author?.name || 'Editorial Staff'}
             </span>
           </div>
 

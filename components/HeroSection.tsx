@@ -55,10 +55,11 @@ export default function HeroSection({ initialArticles }: HeroSectionProps) {
               className="group relative w-full h-72 sm:h-96 lg:h-full min-h-[320px] rounded-[16px] overflow-hidden bg-slate-100 shadow-md block"
             >
               <Image
-                src={featured.coverImage}
+                src={featured.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80'}
                 alt={featured.title}
                 fill
                 priority
+                unoptimized={featured.coverImage?.startsWith('data:')}
                 sizes="(max-width: 1024px) 100vw, 42vw"
                 className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
               />
@@ -162,9 +163,10 @@ export default function HeroSection({ initialArticles }: HeroSectionProps) {
                     {/* Square Thumbnail */}
                     <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden shrink-0 bg-slate-100 shadow-sm">
                       <Image
-                        src={story.coverImage}
+                        src={story.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80'}
                         alt={story.title}
                         fill
+                        unoptimized={story.coverImage?.startsWith('data:')}
                         sizes="96px"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
@@ -184,7 +186,7 @@ export default function HeroSection({ initialArticles }: HeroSectionProps) {
                         {story.title}
                       </h4>
                       <p className="text-[11px] text-slate-400 mt-1">
-                        By {story.author.name}
+                        By {story.author?.name || 'Editorial Staff'}
                       </p>
                     </div>
                   </Link>

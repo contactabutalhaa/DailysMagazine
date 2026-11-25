@@ -174,7 +174,13 @@ export default function AuthorsManagerPage() {
             >
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 rounded-full overflow-hidden relative shrink-0 border-2 border-orange-500/20 shadow-xs">
-                  <Image src={author.avatar} alt={author.name} fill className="object-cover" unoptimized />
+                  <Image
+                    src={author.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'}
+                    alt={author.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">

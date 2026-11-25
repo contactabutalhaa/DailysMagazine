@@ -15,19 +15,21 @@ interface TOCProps {
 }
 
 export default function TableOfContents({ sections, currentSlug }: TOCProps) {
+  const safeSections = Array.isArray(sections) ? sections.filter((s) => s && s.heading) : [];
   const [activeId, setActiveId] = useState<string>('');
   const trending = getTrendingArticles().filter((a) => a.slug !== currentSlug).slice(0, 3);
 
   // Generate URL-friendly anchors from headings
   const slugify = (text: string) =>
-    text
+    (text || '')
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
       .replace(/\s+/g, '-');
 
   useEffect(() => {
+    if (safeSections.length === 0) return;
     const handleScroll = () => {
-      const headings = sections.map((s) => document.getElementById(slugify(s.heading)));
+      const headings = safeSections.map((s) => document.getElementById(slugify(s.heading))).filter(Boolean);
       const scrollPosition = window.scrollY + 160;
 
       for (let i = headings.length - 1; i >= 0; i--) {
@@ -67,23 +69,27 @@ export default function TableOfContents({ sections, currentSlug }: TOCProps) {
         </div>
 
         <nav className="space-y-1">
-          {sections.map((section) => {
-            const id = slugify(section.heading);
-            const isActive = activeId === id;
-            return (
-              <button
-                key={id}
-                onClick={() => scrollToHeading(id)}
-                className={`block w-full text-left py-1.5 px-3 rounded-lg text-xs font-medium transition-all ${
-                  isActive
-                    ? 'bg-orange-50 text-orange-700 font-bold border-l-2 border-orange-600'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                {section.heading}
-              </button>
-            );
-          })}
+          {safeSections.length === 0 ? (
+            <p className="text-xs text-slate-400 italic py-1">Full article overview</p>
+          ) : (
+            safeSections.map((section) => {
+              const id = slugify(section.heading);
+              const isActive = activeId === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => scrollToHeading(id)}
+                  className={`block w-full text-left py-1.5 px-3 rounded-lg text-xs font-medium transition-all ${
+                    isActive
+                      ? 'bg-orange-50 text-orange-700 font-bold border-l-2 border-orange-600'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  {section.heading}
+                </button>
+              );
+            })
+          )}
         </nav>
       </div>
 

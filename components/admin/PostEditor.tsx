@@ -1045,6 +1045,7 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
                     fill
                     sizes="320px"
                     className="object-cover"
+                    unoptimized
                   />
                   <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
                     <button
@@ -1191,7 +1192,7 @@ export default function PostEditor({ initialPost, isNew = false }: PostEditorPro
                     }}
                     className="group relative aspect-video rounded-xl overflow-hidden border border-slate-200 cursor-pointer hover:border-orange-500 hover:ring-2 hover:ring-orange-500/20 transition-all bg-slate-100"
                   >
-                    <Image src={item.url} alt={item.title} fill sizes="160px" className="object-cover" />
+                    <Image src={item.url} alt={item.title} fill sizes="160px" className="object-cover" unoptimized />
                     <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
                       <span className="text-[10px] text-white font-semibold truncate">{item.title}</span>
                     </div>

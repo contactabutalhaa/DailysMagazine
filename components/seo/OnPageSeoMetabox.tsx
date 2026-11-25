@@ -773,6 +773,7 @@ export default function OnPageSeoMetabox({
                   fill
                   sizes="500px"
                   className="object-cover"
+                  unoptimized
                 />
               </div>
               <div className="p-3.5 bg-slate-50">

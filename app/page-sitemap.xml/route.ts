@@ -7,7 +7,13 @@ export async function GET() {
   const urlElements = pages
     .map((p) => {
       const loc = `https://dailysmagazine.com/${p.slug}`;
-      const lastmod = new Date(p.updatedAt || p.publishedAt).toISOString();
+      let lastmod = new Date().toISOString();
+      try {
+        const parsed = new Date(p.updatedAt || p.publishedAt || Date.now());
+        if (!isNaN(parsed.getTime())) {
+          lastmod = parsed.toISOString();
+        }
+      } catch (e) {}
       const changefreq = settings.pagesChangefreq || 'weekly';
       const priority = settings.pagesPriority || '0.6';
 

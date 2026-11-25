@@ -168,11 +168,12 @@ export default function AboutPage() {
               >
                 <div className="relative w-16 h-16 rounded-full overflow-hidden bg-slate-200 mb-4 border border-slate-100">
                   <Image
-                    src={editor.avatar}
+                    src={editor.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'}
                     alt={editor.name}
                     fill
                     sizes="64px"
                     className="object-cover"
+                    unoptimized
                   />
                 </div>
                 <h3 className="font-heading font-extrabold text-lg text-slate-900">

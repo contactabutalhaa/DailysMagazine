@@ -27,6 +27,7 @@ export default function AdminLoginScreen({ onLoginSuccess }: AdminLoginScreenPro
       const validUsers: Record<string, string> = {
         admin: 'admin123',
         editor: 'dailys2026',
+        'lucamarvass@gmail.com': 'admin123',
         'contactabutalhaa@gmail.com': 'admin123',
       };
 

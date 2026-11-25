@@ -170,9 +170,10 @@ export default function SearchModal() {
                       >
                         <div className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-slate-100">
                           <Image
-                            src={article.coverImage}
+                            src={article.coverImage || 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80'}
                             alt={article.title}
                             fill
+                            unoptimized={article.coverImage?.startsWith('data:')}
                             sizes="80px"
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
@@ -197,7 +198,7 @@ export default function SearchModal() {
                           </p>
 
                           <div className="flex items-center gap-2 mt-2 text-[11px] text-slate-400">
-                            <span>By {article.author.name}</span>
+                            <span>By {article.author?.name || 'Editorial Staff'}</span>
                             <span>•</span>
                             <span>{article.publishedAt}</span>
                           </div>
